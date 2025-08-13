@@ -1,16 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import List from "./components/List";
 import type { BudgetItem } from "./types";
 
-const App: React.FC = () => {
-  // State for items - now we can modify the list
-  const [items, setItems] = useState<BudgetItem[]>([
-    { id: 1, name: "Expense #1", amount: 150.0, type: "expense" },
-    { id: 2, name: "Expense #2", amount: 267.83, type: "expense" },
-    { id: 3, name: "Expense #3", amount: 1052.32, type: "expense" },
-    { id: 4, name: "Income #1", amount: 1850.0, type: "income" },
-  ]);
+const API_BASE_URL = "http://localhost:8080/api/items";
 
+const App: React.FC = () => {
+  // State for items - now loaded from backend
+  const [items, setItems] = useState<BudgetItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
   const [formType, setFormType] = useState<"expense" | "income" | "">("");
   const [editingItem, setEditingItem] = useState<BudgetItem | null>(null);
@@ -18,6 +15,27 @@ const App: React.FC = () => {
   // Form input states
   const [formName, setFormName] = useState<string>("");
   const [formAmount, setFormAmount] = useState<string>("");
+
+  // Load all items from backend on component mount
+  useEffect(() => {
+    fetchItems();
+  }, []);
+
+  const fetchItems = async (): Promise<void> => {
+    try {
+      const response = await fetch(API_BASE_URL);
+      if (response.ok) {
+        const data = await response.json();
+        setItems(data);
+      } else {
+        console.error("Failed to fetch items");
+      }
+    } catch (error) {
+      console.error("Error fetching items:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAddClick = (type: "expense" | "income"): void => {
     setFormType(type);
@@ -46,7 +64,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleSubmitForm = (): void => {
+  const handleSubmitForm = async (): Promise<void> => {
     // Validation
     if (!formName.trim() || !formAmount.trim()) {
       alert("Please fill in both name and amount");
@@ -59,46 +77,97 @@ const App: React.FC = () => {
       return;
     }
 
-    if (editingItem) {
-      // Update existing item
-      const updatedItems = items.map((item) =>
-        item.id === editingItem.id
-          ? {
-              ...item,
-              name: formName.trim(),
-              amount: amount,
-              type: formType as "expense" | "income",
-            }
-          : item
-      );
-      setItems(updatedItems);
-    } else {
-      // Create new item
-      const newItem: BudgetItem = {
-        id: Math.max(...items.map((item) => item.id)) + 1,
-        name: formName.trim(),
-        amount: amount,
-        type: formType as "expense" | "income",
-      };
-      setItems([...items, newItem]);
-    }
+    const itemData = {
+      name: formName.trim(),
+      amount: amount,
+      type: formType as "expense" | "income",
+    };
 
-    // Close form
-    handleCloseForm();
+    try {
+      if (editingItem) {
+        // Update existing item
+        const response = await fetch(`${API_BASE_URL}/${editingItem.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(itemData),
+        });
+
+        if (response.ok) {
+          await fetchItems(); // Refresh the list
+          handleCloseForm();
+        } else {
+          alert("Failed to update item");
+        }
+      } else {
+        // Create new item
+        const response = await fetch(API_BASE_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(itemData),
+        });
+
+        if (response.ok) {
+          await fetchItems(); // Refresh the list
+          handleCloseForm();
+        } else {
+          alert("Failed to create item");
+        }
+      }
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      alert("An error occurred while saving the item");
+    }
   };
 
-  const handleDelete = (id: number): void => {
+  const handleDelete = async (id: number): Promise<void> => {
     if (confirm("Are you sure you want to delete this item?")) {
-      setItems(items.filter((item) => item.id !== id));
+      try {
+        const response = await fetch(`${API_BASE_URL}/${id}`, {
+          method: "DELETE",
+        });
+
+        if (response.ok) {
+          await fetchItems(); // Refresh the list
+        } else {
+          alert("Failed to delete item");
+        }
+      } catch (error) {
+        console.error("Error deleting item:", error);
+        alert("An error occurred while deleting the item");
+      }
     }
   };
+
+  // Show loading state while fetching data
+  if (loading) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          width: "100vw",
+          background: "linear-gradient(135deg, #2d3748 0%, #4a5568 100%)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          fontSize: "18px",
+          color: "#4a5568",
+        }}
+      >
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <div
       style={{
         minHeight: "100vh",
         width: "100vw",
-        background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
+        background: "linear-gradient(135deg, #2d3748 0%, #4a5568 100%)",
         padding: "40px 20px",
         fontFamily:
           '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
@@ -130,7 +199,7 @@ const App: React.FC = () => {
           <button
             onClick={() => handleAddClick("expense")}
             style={{
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+              background: "linear-gradient(135deg, #8c52ff 0%, #5ce1e6 100%)",
               border: "none",
               borderRadius: "50px",
               padding: "16px 32px",
@@ -159,7 +228,7 @@ const App: React.FC = () => {
           <button
             onClick={() => handleAddClick("income")}
             style={{
-              background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+              background: "linear-gradient(135deg, #ff66c4 0%, #ffde59 100%)",
               border: "none",
               borderRadius: "50px",
               padding: "16px 32px",
