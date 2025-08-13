@@ -3,8 +3,8 @@ import List from "./components/List";
 import type { BudgetItem } from "./types";
 
 const App: React.FC = () => {
-  // Hardcoded data for Step 1
-  const [items] = useState<BudgetItem[]>([
+  // State for items - now we can modify the list
+  const [items, setItems] = useState<BudgetItem[]>([
     { id: 1, name: "Expense #1", amount: 150.0, type: "expense" },
     { id: 2, name: "Expense #2", amount: 267.83, type: "expense" },
     { id: 3, name: "Expense #3", amount: 1052.32, type: "expense" },
@@ -14,14 +14,50 @@ const App: React.FC = () => {
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
   const [formType, setFormType] = useState<"expense" | "income" | "">("");
 
+  // Form input states
+  const [formName, setFormName] = useState<string>("");
+  const [formAmount, setFormAmount] = useState<string>("");
+
   const handleAddClick = (type: "expense" | "income"): void => {
     setFormType(type);
+    setFormName("");
+    setFormAmount("");
     setShowAddForm(true);
   };
 
   const handleCloseForm = (): void => {
     setShowAddForm(false);
     setFormType("");
+    setFormName("");
+    setFormAmount("");
+  };
+
+  const handleSubmitForm = (): void => {
+    // Validation
+    if (!formName.trim() || !formAmount.trim()) {
+      alert("Please fill in both name and amount");
+      return;
+    }
+
+    const amount = parseFloat(formAmount);
+    if (isNaN(amount) || amount <= 0) {
+      alert("Please enter a valid amount");
+      return;
+    }
+
+    // Create new item
+    const newItem: BudgetItem = {
+      id: Math.max(...items.map((item) => item.id)) + 1, // Generate new ID
+      name: formName.trim(),
+      amount: amount,
+      type: formType as "expense" | "income",
+    };
+
+    // Add to list
+    setItems([...items, newItem]);
+
+    // Close form
+    handleCloseForm();
   };
 
   const handleEdit = (id: number): void => {
@@ -30,8 +66,9 @@ const App: React.FC = () => {
   };
 
   const handleDelete = (id: number): void => {
-    console.log("Delete item:", id);
-    // TODO: Implement delete functionality
+    if (confirm("Are you sure you want to delete this item?")) {
+      setItems(items.filter((item) => item.id !== id));
+    }
   };
 
   return (
@@ -190,6 +227,10 @@ const App: React.FC = () => {
                   <input
                     type="text"
                     placeholder={`Enter ${formType} name`}
+                    value={formName}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setFormName(e.target.value)
+                    }
                     style={{
                       width: "100%",
                       padding: "12px 16px",
@@ -226,6 +267,10 @@ const App: React.FC = () => {
                     type="number"
                     step="0.01"
                     placeholder="0.00"
+                    value={formAmount}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setFormAmount(e.target.value)
+                    }
                     style={{
                       width: "100%",
                       padding: "12px 16px",
@@ -278,7 +323,7 @@ const App: React.FC = () => {
                   </button>
 
                   <button
-                    onClick={handleCloseForm}
+                    onClick={handleSubmitForm}
                     style={{
                       flex: 1,
                       padding: "12px 24px",
