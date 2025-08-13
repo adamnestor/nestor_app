@@ -13,6 +13,7 @@ const App: React.FC = () => {
 
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
   const [formType, setFormType] = useState<"expense" | "income" | "">("");
+  const [editingItem, setEditingItem] = useState<BudgetItem | null>(null);
 
   // Form input states
   const [formName, setFormName] = useState<string>("");
@@ -22,6 +23,7 @@ const App: React.FC = () => {
     setFormType(type);
     setFormName("");
     setFormAmount("");
+    setEditingItem(null);
     setShowAddForm(true);
   };
 
@@ -30,6 +32,18 @@ const App: React.FC = () => {
     setFormType("");
     setFormName("");
     setFormAmount("");
+    setEditingItem(null);
+  };
+
+  const handleEdit = (id: number): void => {
+    const itemToEdit = items.find((item) => item.id === id);
+    if (itemToEdit) {
+      setEditingItem(itemToEdit);
+      setFormType(itemToEdit.type);
+      setFormName(itemToEdit.name);
+      setFormAmount(itemToEdit.amount.toString());
+      setShowAddForm(true);
+    }
   };
 
   const handleSubmitForm = (): void => {
@@ -45,24 +59,32 @@ const App: React.FC = () => {
       return;
     }
 
-    // Create new item
-    const newItem: BudgetItem = {
-      id: Math.max(...items.map((item) => item.id)) + 1, // Generate new ID
-      name: formName.trim(),
-      amount: amount,
-      type: formType as "expense" | "income",
-    };
-
-    // Add to list
-    setItems([...items, newItem]);
+    if (editingItem) {
+      // Update existing item
+      const updatedItems = items.map((item) =>
+        item.id === editingItem.id
+          ? {
+              ...item,
+              name: formName.trim(),
+              amount: amount,
+              type: formType as "expense" | "income",
+            }
+          : item
+      );
+      setItems(updatedItems);
+    } else {
+      // Create new item
+      const newItem: BudgetItem = {
+        id: Math.max(...items.map((item) => item.id)) + 1,
+        name: formName.trim(),
+        amount: amount,
+        type: formType as "expense" | "income",
+      };
+      setItems([...items, newItem]);
+    }
 
     // Close form
     handleCloseForm();
-  };
-
-  const handleEdit = (id: number): void => {
-    console.log("Edit item:", id);
-    // TODO: Implement edit functionality
   };
 
   const handleDelete = (id: number): void => {
@@ -202,7 +224,8 @@ const App: React.FC = () => {
                   textAlign: "center",
                 }}
               >
-                Add {formType === "expense" ? "Expense" : "Income"}
+                {editingItem ? "Edit" : "Add"}{" "}
+                {formType === "expense" ? "Expense" : "Income"}
               </h2>
 
               <div
@@ -346,7 +369,9 @@ const App: React.FC = () => {
                       e.currentTarget.style.transform = "translateY(0)";
                     }}
                   >
-                    Add {formType === "expense" ? "Expense" : "Income"}
+                    {editingItem
+                      ? "Save Changes"
+                      : `Add ${formType === "expense" ? "Expense" : "Income"}`}
                   </button>
                 </div>
               </div>
