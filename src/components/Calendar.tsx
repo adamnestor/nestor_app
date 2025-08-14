@@ -103,8 +103,7 @@ const Calendar: React.FC<CalendarProps> = ({
 
     let dotColor = "#8c52ff"; // Default purple for expenses
     if (hasIncome && hasExpense) {
-      // Gradient dot for both
-      dotColor = "#8c52ff";
+      dotColor = "#5ce1e6";
     } else if (hasIncome) {
       dotColor = "#ff66c4"; // Pink for income
     }

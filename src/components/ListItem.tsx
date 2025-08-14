@@ -3,8 +3,46 @@ import { Edit2, Trash2 } from "lucide-react";
 import type { ListItemProps } from "../types";
 
 const ListItem: React.FC<ListItemProps> = ({ item, onEdit, onDelete }) => {
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+    // Set the data to be transferred (the budget item)
+    e.dataTransfer.setData("application/json", JSON.stringify(item));
+    e.dataTransfer.effectAllowed = "copy";
+
+    // Create a custom drag image that's less transparent
+    const dragImage = e.currentTarget.cloneNode(true) as HTMLElement;
+    dragImage.style.opacity = "0.8"; // Less transparent (default is around 0.5)
+    dragImage.style.transform = "rotate(-5deg)"; // Optional: slight rotation for visual feedback
+    dragImage.style.pointerEvents = "none";
+
+    // Temporarily add to DOM to render, then remove
+    document.body.appendChild(dragImage);
+    e.dataTransfer.setDragImage(
+      dragImage,
+      e.nativeEvent.offsetX,
+      e.nativeEvent.offsetY
+    );
+
+    // Clean up after a brief moment
+    setTimeout(() => {
+      if (document.body.contains(dragImage)) {
+        document.body.removeChild(dragImage);
+      }
+    }, 0);
+
+    // Change cursor during drag
+    e.currentTarget.style.cursor = "grabbing";
+  };
+
+  const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
+    // Reset cursor after drag
+    e.currentTarget.style.cursor = "grab";
+  };
+
   return (
     <div
+      draggable={true} // Make the item draggable
+      onDragStart={handleDragStart} // Handle drag start
+      onDragEnd={handleDragEnd} // Handle drag end
       style={{
         background:
           item.type === "expense"
@@ -15,6 +53,7 @@ const ListItem: React.FC<ListItemProps> = ({ item, onEdit, onDelete }) => {
         width: "100%",
         maxWidth: "450px",
         transition: "all 0.3s ease",
+        cursor: "grab", // Show grab cursor
       }}
       onMouseOver={(e: React.MouseEvent<HTMLDivElement>) => {
         const target = e.currentTarget;
@@ -45,6 +84,7 @@ const ListItem: React.FC<ListItemProps> = ({ item, onEdit, onDelete }) => {
             fontSize: "18px",
             fontWeight: "500",
             color: "#2d3748",
+            pointerEvents: "none", // Prevent text selection during drag
           }}
         >
           {item.name}
@@ -62,6 +102,7 @@ const ListItem: React.FC<ListItemProps> = ({ item, onEdit, onDelete }) => {
               fontSize: "20px",
               fontWeight: "700",
               color: item.type === "expense" ? "#667eea" : "#f5576c",
+              pointerEvents: "none", // Prevent text selection during drag
             }}
           >
             ${item.amount.toFixed(2)}
@@ -74,7 +115,10 @@ const ListItem: React.FC<ListItemProps> = ({ item, onEdit, onDelete }) => {
             }}
           >
             <button
-              onClick={() => onEdit(item.id)}
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent drag when clicking buttons
+                onEdit(item.id);
+              }}
               style={{
                 background: "none",
                 border: "none",
@@ -97,7 +141,10 @@ const ListItem: React.FC<ListItemProps> = ({ item, onEdit, onDelete }) => {
             </button>
 
             <button
-              onClick={() => onDelete(item.id)}
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent drag when clicking buttons
+                onDelete(item.id);
+              }}
               style={{
                 background: "none",
                 border: "none",
