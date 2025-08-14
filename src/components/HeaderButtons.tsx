@@ -93,7 +93,7 @@ const HeaderButtons: React.FC<HeaderButtonsProps> = ({
       <button
         onClick={onBalanceClick}
         style={{
-          background: "linear-gradient(135deg, #4a5568 0%, #2d3748 100%)",
+          background: "linear-gradient(135deg, #0097b2 0%, #7ed957 100%)",
           border: "none",
           borderRadius: "50px",
           padding: "12px 20px",
