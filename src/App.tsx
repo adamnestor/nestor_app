@@ -173,7 +173,7 @@ const App: React.FC = () => {
             maxWidth: "800px",
           }}
         >
-          <Calendar />
+          <Calendar scheduledItems={[]} />
         </div>
       </div>
 

@@ -1,7 +1,12 @@
 import React, { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import type { ScheduledBudgetItem } from "../types";
 
-const Calendar: React.FC = () => {
+interface CalendarProps {
+  scheduledItems?: ScheduledBudgetItem[];
+}
+
+const Calendar: React.FC<CalendarProps> = ({ scheduledItems = [] }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const monthNames = [
@@ -50,6 +55,67 @@ const Calendar: React.FC = () => {
     );
   };
 
+  const getDateString = (day: number): string => {
+    const year = currentDate.getFullYear();
+    const month = String(currentDate.getMonth() + 1).padStart(2, "0");
+    const dayStr = String(day).padStart(2, "0");
+    return `${year}-${month}-${dayStr}`;
+  };
+
+  const getItemsForDate = (day: number): ScheduledBudgetItem[] => {
+    const dateStr = getDateString(day);
+    return scheduledItems.filter((item) => item.date === dateStr);
+  };
+
+  const calculateRunningBalance = (throughDay: number): number => {
+    let balance = 0;
+    for (let day = 1; day <= throughDay; day++) {
+      const dayItems = getItemsForDate(day);
+      dayItems.forEach((scheduledItem) => {
+        const amount =
+          scheduledItem.amount ?? scheduledItem.budgetItem?.amount ?? 0;
+        const type = scheduledItem.budgetItem?.type ?? "expense";
+        if (type === "income") {
+          balance += amount;
+        } else {
+          balance -= amount;
+        }
+      });
+    }
+    return balance;
+  };
+
+  const getIndicatorDot = (
+    items: ScheduledBudgetItem[]
+  ): React.ReactElement | null => {
+    if (items.length === 0) return null;
+
+    const hasExpense = items.some(
+      (item) => item.budgetItem?.type === "expense"
+    );
+    const hasIncome = items.some((item) => item.budgetItem?.type === "income");
+
+    let dotColor = "#8c52ff"; // Default purple for expenses
+    if (hasIncome && hasExpense) {
+      // Gradient dot for both
+      dotColor = "#8c52ff";
+    } else if (hasIncome) {
+      dotColor = "#ff66c4"; // Pink for income
+    }
+
+    return (
+      <div
+        style={{
+          width: "6px",
+          height: "6px",
+          borderRadius: "50%",
+          backgroundColor: dotColor,
+          marginLeft: "4px",
+        }}
+      />
+    );
+  };
+
   const renderCalendarDays = () => {
     const daysInMonth = getDaysInMonth(currentDate);
     const firstDay = getFirstDayOfMonth(currentDate);
@@ -61,8 +127,8 @@ const Calendar: React.FC = () => {
         <div
           key={`empty-${i}`}
           style={{
-            padding: "12px",
-            textAlign: "center",
+            padding: "8px",
+            minHeight: "60px",
           }}
         />
       );
@@ -70,18 +136,25 @@ const Calendar: React.FC = () => {
 
     // Add days of the month
     for (let day = 1; day <= daysInMonth; day++) {
+      const dayItems = getItemsForDate(day);
+      const runningBalance = calculateRunningBalance(day);
+      const indicatorDot = getIndicatorDot(dayItems);
+
       days.push(
         <div
           key={day}
           style={{
-            padding: "12px",
-            textAlign: "center",
+            padding: "8px",
+            minHeight: "60px",
             borderRadius: "8px",
             cursor: "pointer",
             transition: "all 0.2s ease",
             backgroundColor: isToday(day) ? "#8c52ff" : "transparent",
             color: isToday(day) ? "white" : "#2d3748",
-            fontWeight: isToday(day) ? "600" : "500",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "flex-start",
+            alignItems: "center",
           }}
           onMouseOver={(e: React.MouseEvent<HTMLDivElement>) => {
             if (!isToday(day)) {
@@ -94,7 +167,48 @@ const Calendar: React.FC = () => {
             }
           }}
         >
-          {day}
+          {/* First Line: Date + Dot */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: "2px",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "16px",
+                fontWeight: isToday(day) ? "600" : "500",
+              }}
+            >
+              {day}
+            </span>
+            {indicatorDot}
+          </div>
+
+          {/* Second Line: Running Balance */}
+          <div
+            style={{
+              fontSize: "10px",
+              fontWeight: "500",
+              color:
+                runningBalance > 0
+                  ? isToday(day)
+                    ? "#c6f6d5"
+                    : "#059669"
+                  : runningBalance < 0
+                  ? isToday(day)
+                    ? "#fed7d7"
+                    : "#dc2626"
+                  : isToday(day)
+                  ? "#e2e8f0"
+                  : "#718096",
+            }}
+          >
+            {runningBalance !== 0 &&
+              `${runningBalance > 0 ? "+" : ""}${runningBalance.toFixed(0)}`}
+          </div>
         </div>
       );
     }
