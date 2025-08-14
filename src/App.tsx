@@ -271,25 +271,57 @@ const App: React.FC = () => {
   return (
     <div
       style={{
-        minHeight: "100vh",
+        height: "100vh", // Fixed viewport height
         width: "100vw",
         background: "linear-gradient(135deg, #2d3748 0%, #4a5568 100%)",
         display: "flex",
         fontFamily:
           '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         boxSizing: "border-box",
+        overflow: "hidden", // Prevent main container from scrolling
       }}
     >
-      {/* LEFT PANEL - Budget App (35%) */}
+      {/* LEFT PANEL - Budget App (35%) - Scrollable */}
       <div
         style={{
           width: "35%",
-          minHeight: "100vh",
+          height: "100vh", // Fixed height
           padding: "40px 20px",
           display: "flex",
           justifyContent: "center",
           alignItems: "flex-start",
           boxSizing: "border-box",
+          overflowY: "auto", // Enable vertical scrolling for this panel only
+          overflowX: "hidden", // Prevent horizontal scrolling
+          // Custom scrollbar styling for WebKit browsers
+          scrollbarWidth: "thin", // Firefox
+          scrollbarColor: "rgba(255, 255, 255, 0.3) transparent", // Firefox
+        }}
+        // Custom scrollbar for WebKit browsers (Chrome, Safari, Edge)
+        ref={(el) => {
+          if (el) {
+            const style = document.createElement("style");
+            style.textContent = `
+              .left-panel::-webkit-scrollbar {
+                width: 6px;
+              }
+              .left-panel::-webkit-scrollbar-track {
+                background: transparent;
+              }
+              .left-panel::-webkit-scrollbar-thumb {
+                background: rgba(255, 255, 255, 0.2);
+                border-radius: 3px;
+              }
+              .left-panel::-webkit-scrollbar-thumb:hover {
+                background: rgba(255, 255, 255, 0.3);
+              }
+            `;
+            if (!document.querySelector("#custom-scrollbar-styles")) {
+              style.id = "custom-scrollbar-styles";
+              document.head.appendChild(style);
+            }
+            el.className = "left-panel";
+          }
         }}
       >
         <div
@@ -299,6 +331,7 @@ const App: React.FC = () => {
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
+            paddingBottom: "40px", // Extra space at bottom for scroll comfort
           }}
         >
           <HeaderButtons
@@ -310,17 +343,18 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      {/* RIGHT PANEL - Calendar (65%) */}
+      {/* RIGHT PANEL - Calendar (65%) - Fixed/Stationary */}
       <div
         style={{
           width: "65%",
-          minHeight: "100vh",
+          height: "100vh", // Fixed height
           padding: "40px",
           boxSizing: "border-box",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "flex-start",
+          overflow: "hidden", // No scrolling for calendar panel
         }}
       >
         <div
