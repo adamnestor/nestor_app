@@ -4,6 +4,7 @@ import AddFormModal from "./components/AddFormModal";
 import HeaderButtons from "./components/HeaderButtons";
 import LoadingScreen from "./components/LoadingScreen";
 import ErrorScreen from "./components/ErrorScreen";
+import Calendar from "./components/Calendar";
 import { useBudgetItems } from "./hooks/useBudgetItems";
 import type { BudgetItem } from "./types";
 
@@ -19,7 +20,7 @@ const App: React.FC = () => {
     refreshItems,
   } = useBudgetItems();
 
-  // Form state (could be extracted to another hook later)
+  // Form state
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
   const [formType, setFormType] = useState<"expense" | "income" | "">("");
   const [editingItem, setEditingItem] = useState<BudgetItem | null>(null);
@@ -112,47 +113,82 @@ const App: React.FC = () => {
     return <ErrorScreen error={error} onRetry={refreshItems} />;
   }
 
-  // Main app render
+  // Main app render - Two Panel Layout
   return (
     <div
       style={{
         minHeight: "100vh",
         width: "100vw",
         background: "linear-gradient(135deg, #2d3748 0%, #4a5568 100%)",
-        padding: "40px 20px",
+        display: "flex",
         fontFamily:
           '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "flex-start",
         boxSizing: "border-box",
       }}
     >
+      {/* LEFT PANEL - Budget App (25%) */}
       <div
         style={{
-          width: "100%",
-          maxWidth: "600px",
+          width: "25%",
+          minHeight: "100vh",
+          padding: "40px 20px",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "flex-start",
+          boxSizing: "border-box",
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            maxWidth: "400px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          <HeaderButtons onAddClick={handleAddClick} />
+
+          <List items={items} onEdit={handleEdit} onDelete={handleDelete} />
+        </div>
+      </div>
+
+      {/* RIGHT PANEL - Calendar (75%) */}
+      <div
+        style={{
+          width: "75%",
+          minHeight: "100vh",
+          background: "linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%)",
+          padding: "40px",
+          boxSizing: "border-box",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
+          justifyContent: "flex-start",
         }}
       >
-        <HeaderButtons onAddClick={handleAddClick} />
-
-        <List items={items} onEdit={handleEdit} onDelete={handleDelete} />
-
-        <AddFormModal
-          showForm={showAddForm}
-          formType={formType}
-          editingItem={editingItem}
-          formName={formName}
-          formAmount={formAmount}
-          onNameChange={setFormName}
-          onAmountChange={setFormAmount}
-          onClose={handleCloseForm}
-          onSubmit={handleSubmitForm}
-        />
+        <div
+          style={{
+            width: "100%",
+            maxWidth: "800px",
+          }}
+        >
+          <Calendar />
+        </div>
       </div>
+
+      {/* Modal (overlays both panels) */}
+      <AddFormModal
+        showForm={showAddForm}
+        formType={formType}
+        editingItem={editingItem}
+        formName={formName}
+        formAmount={formAmount}
+        onNameChange={setFormName}
+        onAmountChange={setFormAmount}
+        onClose={handleCloseForm}
+        onSubmit={handleSubmitForm}
+      />
     </div>
   );
 };

@@ -1,0 +1,223 @@
+import React, { useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+const Calendar: React.FC = () => {
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  const monthNames = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  const getDaysInMonth = (date: Date): number => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (date: Date): number => {
+    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+  };
+
+  const goToPreviousMonth = (): void => {
+    setCurrentDate(
+      new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1)
+    );
+  };
+
+  const goToNextMonth = (): void => {
+    setCurrentDate(
+      new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1)
+    );
+  };
+
+  const isToday = (day: number): boolean => {
+    const today = new Date();
+    return (
+      day === today.getDate() &&
+      currentDate.getMonth() === today.getMonth() &&
+      currentDate.getFullYear() === today.getFullYear()
+    );
+  };
+
+  const renderCalendarDays = () => {
+    const daysInMonth = getDaysInMonth(currentDate);
+    const firstDay = getFirstDayOfMonth(currentDate);
+    const days = [];
+
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < firstDay; i++) {
+      days.push(
+        <div
+          key={`empty-${i}`}
+          style={{
+            padding: "12px",
+            textAlign: "center",
+          }}
+        />
+      );
+    }
+
+    // Add days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push(
+        <div
+          key={day}
+          style={{
+            padding: "12px",
+            textAlign: "center",
+            borderRadius: "8px",
+            cursor: "pointer",
+            transition: "all 0.2s ease",
+            backgroundColor: isToday(day) ? "#8c52ff" : "transparent",
+            color: isToday(day) ? "white" : "#2d3748",
+            fontWeight: isToday(day) ? "600" : "500",
+          }}
+          onMouseOver={(e: React.MouseEvent<HTMLDivElement>) => {
+            if (!isToday(day)) {
+              e.currentTarget.style.backgroundColor = "#e2e8f0";
+            }
+          }}
+          onMouseOut={(e: React.MouseEvent<HTMLDivElement>) => {
+            if (!isToday(day)) {
+              e.currentTarget.style.backgroundColor = "transparent";
+            }
+          }}
+        >
+          {day}
+        </div>
+      );
+    }
+
+    return days;
+  };
+
+  return (
+    <div
+      style={{
+        background: "white",
+        borderRadius: "12px",
+        padding: "24px",
+        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+        maxWidth: "100%",
+      }}
+    >
+      {/* Month Navigation Header */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "24px",
+        }}
+      >
+        <button
+          onClick={goToPreviousMonth}
+          style={{
+            background: "none",
+            border: "none",
+            padding: "8px",
+            borderRadius: "50%",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "background-color 0.2s ease",
+          }}
+          onMouseOver={(e: React.MouseEvent<HTMLButtonElement>) => {
+            e.currentTarget.style.backgroundColor = "#f7fafc";
+          }}
+          onMouseOut={(e: React.MouseEvent<HTMLButtonElement>) => {
+            e.currentTarget.style.backgroundColor = "transparent";
+          }}
+        >
+          <ChevronLeft size={20} color="#4a5568" />
+        </button>
+
+        <h2
+          style={{
+            fontSize: "20px",
+            fontWeight: "700",
+            color: "#2d3748",
+            margin: "0",
+          }}
+        >
+          {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+        </h2>
+
+        <button
+          onClick={goToNextMonth}
+          style={{
+            background: "none",
+            border: "none",
+            padding: "8px",
+            borderRadius: "50%",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "background-color 0.2s ease",
+          }}
+          onMouseOver={(e: React.MouseEvent<HTMLButtonElement>) => {
+            e.currentTarget.style.backgroundColor = "#f7fafc";
+          }}
+          onMouseOut={(e: React.MouseEvent<HTMLButtonElement>) => {
+            e.currentTarget.style.backgroundColor = "transparent";
+          }}
+        >
+          <ChevronRight size={20} color="#4a5568" />
+        </button>
+      </div>
+
+      {/* Day Headers */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(7, 1fr)",
+          gap: "1px",
+          marginBottom: "12px",
+        }}
+      >
+        {dayNames.map((day) => (
+          <div
+            key={day}
+            style={{
+              padding: "8px",
+              textAlign: "center",
+              fontSize: "12px",
+              fontWeight: "600",
+              color: "#718096",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+            }}
+          >
+            {day}
+          </div>
+        ))}
+      </div>
+
+      {/* Calendar Grid */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(7, 1fr)",
+          gap: "1px",
+        }}
+      >
+        {renderCalendarDays()}
+      </div>
+    </div>
+  );
+};
+
+export default Calendar;
