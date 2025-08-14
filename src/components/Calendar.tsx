@@ -63,6 +63,16 @@ const Calendar: React.FC<CalendarProps> = ({
     );
   };
 
+  const isPastDate = (day: number): boolean => {
+    const today = new Date();
+    const dateToCheck = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      day
+    );
+    return dateToCheck < today && !isToday(day);
+  };
+
   const getDateString = (day: number): string => {
     const year = currentDate.getFullYear();
     const month = String(currentDate.getMonth() + 1).padStart(2, "0");
@@ -220,6 +230,7 @@ const Calendar: React.FC<CalendarProps> = ({
             justifyContent: "flex-start",
             alignItems: "center",
             border: "2px dashed transparent",
+            opacity: isPastDate(day) ? "0.6" : "1", // Darken past dates
           }}
           onMouseOver={(e: React.MouseEvent<HTMLDivElement>) => {
             if (!isToday(day)) {
@@ -271,7 +282,9 @@ const Calendar: React.FC<CalendarProps> = ({
                   : "#718096",
             }}
           >
-            {runningBalance < 0
+            {isPastDate(day)
+              ? "" // Show balance only for current/future dates
+              : runningBalance < 0
               ? `-$${Math.abs(runningBalance).toFixed(0)}`
               : `$${runningBalance.toFixed(0)}`}
           </div>
