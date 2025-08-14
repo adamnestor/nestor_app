@@ -4,9 +4,13 @@ import type { ScheduledBudgetItem } from "../types";
 
 interface CalendarProps {
   scheduledItems?: ScheduledBudgetItem[];
+  startingBalance?: number;
 }
 
-const Calendar: React.FC<CalendarProps> = ({ scheduledItems = [] }) => {
+const Calendar: React.FC<CalendarProps> = ({
+  scheduledItems = [],
+  startingBalance = 0,
+}) => {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const monthNames = [
@@ -68,7 +72,7 @@ const Calendar: React.FC<CalendarProps> = ({ scheduledItems = [] }) => {
   };
 
   const calculateRunningBalance = (throughDay: number): number => {
-    let balance = 0;
+    let balance = startingBalance; // Start with the starting balance
     for (let day = 1; day <= throughDay; day++) {
       const dayItems = getItemsForDate(day);
       dayItems.forEach((scheduledItem) => {
@@ -207,7 +211,11 @@ const Calendar: React.FC<CalendarProps> = ({ scheduledItems = [] }) => {
             }}
           >
             {runningBalance !== 0 &&
-              `${runningBalance > 0 ? "+" : ""}${runningBalance.toFixed(0)}`}
+              `${
+                runningBalance < 0
+                  ? `-$${Math.abs(runningBalance).toFixed(0)}`
+                  : `$${runningBalance.toFixed(0)}`
+              }`}
           </div>
         </div>
       );

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import List from "./components/List";
 import AddFormModal from "./components/AddFormModal";
 import HeaderButtons from "./components/HeaderButtons";
@@ -6,6 +6,7 @@ import LoadingScreen from "./components/LoadingScreen";
 import ErrorScreen from "./components/ErrorScreen";
 import Calendar from "./components/Calendar";
 import { useBudgetItems } from "./hooks/useBudgetItems";
+import { useScheduledItems } from "./hooks/useScheduledItems";
 import type { BudgetItem } from "./types";
 
 const App: React.FC = () => {
@@ -20,12 +21,21 @@ const App: React.FC = () => {
     refreshItems,
   } = useBudgetItems();
 
+  // Custom hook for scheduled items (calendar data)
+  const { scheduledItems, loadMonthItems } = useScheduledItems();
+
   // Form state
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
   const [formType, setFormType] = useState<"expense" | "income" | "">("");
   const [editingItem, setEditingItem] = useState<BudgetItem | null>(null);
   const [formName, setFormName] = useState<string>("");
   const [formAmount, setFormAmount] = useState<string>("");
+
+  // Load current month's scheduled items on component mount
+  useEffect(() => {
+    const currentDate = new Date();
+    loadMonthItems(currentDate.getFullYear(), currentDate.getMonth() + 1);
+  }, [loadMonthItems]);
 
   // Form Handlers
   const handleAddClick = (type: "expense" | "income"): void => {
@@ -158,7 +168,6 @@ const App: React.FC = () => {
         style={{
           width: "75%",
           minHeight: "100vh",
-          background: "linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%)",
           padding: "40px",
           boxSizing: "border-box",
           display: "flex",
@@ -173,7 +182,7 @@ const App: React.FC = () => {
             maxWidth: "800px",
           }}
         >
-          <Calendar scheduledItems={[]} />
+          <Calendar scheduledItems={scheduledItems} startingBalance={2500} />
         </div>
       </div>
 
