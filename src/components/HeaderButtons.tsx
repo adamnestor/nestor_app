@@ -13,106 +13,115 @@ const HeaderButtons: React.FC<HeaderButtonsProps> = ({
     <div
       style={{
         display: "flex",
-        flexDirection: "column",
         gap: "12px",
         marginBottom: "40px",
         alignItems: "center",
         width: "100%",
+        justifyContent: "center",
+        flexWrap: "wrap",
       }}
     >
-      {/* Add buttons row */}
-      <div
+      {/* Expense button */}
+      <button
+        onClick={() => onAddClick("expense")}
         style={{
+          background: "linear-gradient(135deg, #8c52ff 0%, #5ce1e6 100%)",
+          border: "none",
+          borderRadius: "50px",
+          padding: "12px 20px",
+          color: "white",
+          fontSize: "14px",
+          fontWeight: "600",
+          cursor: "pointer",
+          boxShadow: "0 8px 25px rgba(140, 82, 255, 0.3)",
+          transition: "all 0.3s ease",
           display: "flex",
-          gap: "12px",
-          justifyContent: "center",
-          flexWrap: "wrap",
+          alignItems: "center",
+          gap: "6px",
+          minWidth: "120px",
+        }}
+        onMouseOver={(e: React.MouseEvent<HTMLButtonElement>) => {
+          e.currentTarget.style.transform = "translateY(-2px)";
+          e.currentTarget.style.boxShadow =
+            "0 12px 30px rgba(140, 82, 255, 0.4)";
+        }}
+        onMouseOut={(e: React.MouseEvent<HTMLButtonElement>) => {
+          e.currentTarget.style.transform = "translateY(0)";
+          e.currentTarget.style.boxShadow =
+            "0 8px 25px rgba(140, 82, 255, 0.3)";
         }}
       >
-        <button
-          onClick={() => onAddClick("expense")}
-          style={{
-            background: "linear-gradient(135deg, #8c52ff 0%, #5ce1e6 100%)",
-            border: "none",
-            borderRadius: "50px",
-            padding: "16px 32px",
-            color: "white",
-            fontSize: "18px",
-            fontWeight: "600",
-            cursor: "pointer",
-            boxShadow: "0 8px 25px rgba(140, 82, 255, 0.3)",
-            transition: "all 0.3s ease",
-            minWidth: "160px",
-          }}
-          onMouseOver={(e: React.MouseEvent<HTMLButtonElement>) => {
-            e.currentTarget.style.transform = "translateY(-2px)";
-            e.currentTarget.style.boxShadow =
-              "0 12px 30px rgba(140, 82, 255, 0.4)";
-          }}
-          onMouseOut={(e: React.MouseEvent<HTMLButtonElement>) => {
-            e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.boxShadow =
-              "0 8px 25px rgba(140, 82, 255, 0.3)";
-          }}
-        >
-          Add Expense
-        </button>
+        <span style={{ fontSize: "16px" }}>➕</span>
+        Expense
+      </button>
 
-        <button
-          onClick={() => onAddClick("income")}
-          style={{
-            background: "linear-gradient(135deg, #ff66c4 0%, #ffde59 100%)",
-            border: "none",
-            borderRadius: "50px",
-            padding: "16px 32px",
-            color: "white",
-            fontSize: "18px",
-            fontWeight: "600",
-            cursor: "pointer",
-            boxShadow: "0 8px 25px rgba(255, 102, 196, 0.3)",
-            transition: "all 0.3s ease",
-            minWidth: "160px",
-          }}
-          onMouseOver={(e: React.MouseEvent<HTMLButtonElement>) => {
-            e.currentTarget.style.transform = "translateY(-2px)";
-            e.currentTarget.style.boxShadow =
-              "0 12px 30px rgba(255, 102, 196, 0.4)";
-          }}
-          onMouseOut={(e: React.MouseEvent<HTMLButtonElement>) => {
-            e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.boxShadow =
-              "0 8px 25px rgba(255, 102, 196, 0.3)";
-          }}
-        >
-          Add Income
-        </button>
-      </div>
+      {/* Income button */}
+      <button
+        onClick={() => onAddClick("income")}
+        style={{
+          background: "linear-gradient(135deg, #ff66c4 0%, #ffde59 100%)",
+          border: "none",
+          borderRadius: "50px",
+          padding: "12px 20px",
+          color: "white",
+          fontSize: "14px",
+          fontWeight: "600",
+          cursor: "pointer",
+          boxShadow: "0 8px 25px rgba(255, 102, 196, 0.3)",
+          transition: "all 0.3s ease",
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
+          minWidth: "120px",
+        }}
+        onMouseOver={(e: React.MouseEvent<HTMLButtonElement>) => {
+          e.currentTarget.style.transform = "translateY(-2px)";
+          e.currentTarget.style.boxShadow =
+            "0 12px 30px rgba(255, 102, 196, 0.4)";
+        }}
+        onMouseOut={(e: React.MouseEvent<HTMLButtonElement>) => {
+          e.currentTarget.style.transform = "translateY(0)";
+          e.currentTarget.style.boxShadow =
+            "0 8px 25px rgba(255, 102, 196, 0.3)";
+        }}
+      >
+        <span style={{ fontSize: "16px" }}>➕</span>
+        Income
+      </button>
 
       {/* Balance adjustment button */}
       <button
         onClick={onBalanceClick}
         style={{
           background: "linear-gradient(135deg, #4a5568 0%, #2d3748 100%)",
-          border: "2px solid rgba(255, 255, 255, 0.2)",
-          borderRadius: "25px",
-          padding: "8px 20px",
+          border: "none",
+          borderRadius: "50px",
+          padding: "12px 20px",
           color: "white",
           fontSize: "14px",
-          fontWeight: "500",
+          fontWeight: "600",
           cursor: "pointer",
+          boxShadow: "0 8px 25px rgba(74, 85, 104, 0.3)",
           transition: "all 0.3s ease",
-          opacity: "0.8",
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
+          minWidth: "120px",
+          opacity: "0.9",
         }}
         onMouseOver={(e: React.MouseEvent<HTMLButtonElement>) => {
           e.currentTarget.style.opacity = "1";
-          e.currentTarget.style.transform = "translateY(-1px)";
+          e.currentTarget.style.transform = "translateY(-2px)";
+          e.currentTarget.style.boxShadow = "0 12px 30px rgba(74, 85, 104, 0.4)";
         }}
         onMouseOut={(e: React.MouseEvent<HTMLButtonElement>) => {
-          e.currentTarget.style.opacity = "0.8";
+          e.currentTarget.style.opacity = "0.9";
           e.currentTarget.style.transform = "translateY(0)";
+          e.currentTarget.style.boxShadow = "0 8px 25px rgba(74, 85, 104, 0.3)";
         }}
       >
-        💰 Set Starting Balance
+        <span style={{ fontSize: "16px" }}>📍</span>
+        Balance
       </button>
     </div>
   );

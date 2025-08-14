@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { DollarSign, X } from "lucide-react";
 
 interface StartingBalanceModalProps {
   showModal: boolean;
@@ -12,43 +11,49 @@ const StartingBalanceModal: React.FC<StartingBalanceModalProps> = ({
   onClose,
   onSetBalance,
 }) => {
-  const [selectedDate, setSelectedDate] = useState<string>(() => {
-    // Default to today
+  const [date, setDate] = useState(() => {
+    // Default to today's date
     const today = new Date();
     return today.toISOString().split("T")[0];
   });
   const [amount, setAmount] = useState<string>("");
+  const [error, setError] = useState<string>("");
 
-  if (!showModal) return null;
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
 
-  const handleSubmit = (): void => {
-    const balanceAmount = parseFloat(amount);
-
-    if (isNaN(balanceAmount)) {
-      alert("Please enter a valid amount");
+    // Validate amount
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount)) {
+      setError("Please enter a valid amount");
       return;
     }
 
-    onSetBalance(selectedDate, balanceAmount);
+    // Validate date
+    if (!date) {
+      setError("Please select a date");
+      return;
+    }
+
+    onSetBalance(date, numAmount);
 
     // Reset form
     setAmount("");
-    setSelectedDate(() => {
-      const today = new Date();
-      return today.toISOString().split("T")[0];
-    });
+    const today = new Date();
+    setDate(today.toISOString().split("T")[0]);
     onClose();
   };
 
-  const handleCancel = (): void => {
-    // Reset form
+  const handleClose = () => {
+    setError("");
     setAmount("");
-    setSelectedDate(() => {
-      const today = new Date();
-      return today.toISOString().split("T")[0];
-    });
+    const today = new Date();
+    setDate(today.toISOString().split("T")[0]);
     onClose();
   };
+
+  if (!showModal) return null;
 
   return (
     <div
@@ -71,7 +76,7 @@ const StartingBalanceModal: React.FC<StartingBalanceModalProps> = ({
           borderRadius: "16px",
           padding: "32px",
           width: "90%",
-          maxWidth: "400px",
+          maxWidth: "450px",
           boxShadow: "0 25px 50px rgba(0, 0, 0, 0.3)",
         }}
       >
@@ -84,37 +89,30 @@ const StartingBalanceModal: React.FC<StartingBalanceModalProps> = ({
             marginBottom: "24px",
           }}
         >
-          <div
+          <h2
             style={{
+              fontSize: "22px",
+              fontWeight: "700",
+              color: "#2d3748",
+              margin: "0",
               display: "flex",
               alignItems: "center",
               gap: "8px",
             }}
           >
-            <DollarSign size={24} color="#2d3748" />
-            <h2
-              style={{
-                fontSize: "20px",
-                fontWeight: "700",
-                color: "#2d3748",
-                margin: "0",
-              }}
-            >
-              Set Starting Balance
-            </h2>
-          </div>
+            📍 Adjust Balance
+          </h2>
 
           <button
-            onClick={handleCancel}
+            onClick={handleClose}
             style={{
               background: "none",
               border: "none",
               padding: "8px",
               borderRadius: "50%",
               cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              fontSize: "20px",
+              color: "#718096",
               transition: "background-color 0.2s ease",
             }}
             onMouseOver={(e: React.MouseEvent<HTMLButtonElement>) => {
@@ -124,111 +122,71 @@ const StartingBalanceModal: React.FC<StartingBalanceModalProps> = ({
               e.currentTarget.style.backgroundColor = "transparent";
             }}
           >
-            <X size={20} color="#718096" />
+            ✕
           </button>
         </div>
 
         {/* Description */}
         <p
           style={{
-            fontSize: "14px",
+            fontSize: "15px",
             color: "#718096",
             marginBottom: "24px",
             lineHeight: "1.5",
           }}
         >
           Set your account balance as of a specific date. Running balances will
-          be calculated from this point forward.
+          be recalculated from this point forward only.
         </p>
 
-        {/* Form */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "20px",
-          }}
-        >
-          {/* Date Input */}
-          <div>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "8px",
-                fontSize: "14px",
-                fontWeight: "600",
-                color: "#4a5568",
-              }}
-            >
-              Effective Date
-            </label>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setSelectedDate(e.target.value)
-              }
-              style={{
-                width: "100%",
-                padding: "12px 16px",
-                border: "2px solid #e2e8f0",
-                borderRadius: "8px",
-                fontSize: "16px",
-                boxSizing: "border-box",
-                transition: "border-color 0.2s ease",
-              }}
-              onFocus={(e: React.FocusEvent<HTMLInputElement>) => {
-                e.currentTarget.style.borderColor = "#667eea";
-                e.currentTarget.style.outline = "none";
-              }}
-              onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                e.currentTarget.style.borderColor = "#e2e8f0";
-              }}
-            />
+        {/* Error Display */}
+        {error && (
+          <div
+            style={{
+              background: "#fed7d7",
+              border: "1px solid #e53e3e",
+              borderRadius: "8px",
+              padding: "12px",
+              marginBottom: "20px",
+              fontSize: "14px",
+              color: "#c53030",
+            }}
+          >
+            {error}
           </div>
+        )}
 
-          {/* Amount Input */}
-          <div>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "8px",
-                fontSize: "14px",
-                fontWeight: "600",
-                color: "#4a5568",
-              }}
-            >
-              Starting Balance
-            </label>
-            <div
-              style={{
-                position: "relative",
-              }}
-            >
-              <span
+        {/* Form */}
+        <form onSubmit={handleSubmit}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "20px",
+            }}
+          >
+            {/* Date Input */}
+            <div>
+              <label
                 style={{
-                  position: "absolute",
-                  left: "16px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  color: "#718096",
-                  fontSize: "16px",
-                  fontWeight: "500",
+                  display: "block",
+                  marginBottom: "8px",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  color: "#4a5568",
                 }}
               >
-                $
-              </span>
+                Effective Date
+              </label>
               <input
-                type="number"
-                step="0.01"
-                value={amount}
+                type="date"
+                value={date}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setAmount(e.target.value)
+                  setDate(e.target.value)
                 }
-                placeholder="2500.00"
                 style={{
                   width: "100%",
-                  padding: "12px 16px 12px 32px",
+                  padding: "12px 16px",
                   border: "2px solid #e2e8f0",
                   borderRadius: "8px",
                   fontSize: "16px",
@@ -244,88 +202,149 @@ const StartingBalanceModal: React.FC<StartingBalanceModalProps> = ({
                 }}
               />
             </div>
-          </div>
 
-          {/* Warning */}
-          <div
-            style={{
-              background: "#fef5e7",
-              border: "1px solid #feb2b2",
-              borderRadius: "8px",
-              padding: "12px",
-              fontSize: "12px",
-              color: "#744210",
-            }}
-          >
-            <strong>Note:</strong> This will recalculate running balances from
-            the selected date forward. Previous dates will keep their existing
-            balances.
-          </div>
+            {/* Amount Input */}
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "8px",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  color: "#4a5568",
+                }}
+              >
+                New Balance Amount
+              </label>
+              <div
+                style={{
+                  position: "relative",
+                }}
+              >
+                <span
+                  style={{
+                    position: "absolute",
+                    left: "16px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "#718096",
+                    fontSize: "16px",
+                    fontWeight: "500",
+                  }}
+                >
+                  $
+                </span>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={amount}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setAmount(e.target.value)
+                  }
+                  placeholder="2500.00"
+                  style={{
+                    width: "100%",
+                    padding: "12px 16px 12px 32px",
+                    border: "2px solid #e2e8f0",
+                    borderRadius: "8px",
+                    fontSize: "16px",
+                    boxSizing: "border-box",
+                    transition: "border-color 0.2s ease",
+                  }}
+                  onFocus={(e: React.FocusEvent<HTMLInputElement>) => {
+                    e.currentTarget.style.borderColor = "#667eea";
+                    e.currentTarget.style.outline = "none";
+                  }}
+                  onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                    e.currentTarget.style.borderColor = "#e2e8f0";
+                  }}
+                />
+              </div>
+            </div>
 
-          {/* Buttons */}
-          <div
-            style={{
-              display: "flex",
-              gap: "12px",
-              marginTop: "8px",
-            }}
-          >
-            <button
-              onClick={handleCancel}
+            {/* Warning */}
+            <div
               style={{
-                flex: 1,
-                padding: "12px 24px",
-                border: "2px solid #e2e8f0",
+                background: "#fef5e7",
+                border: "1px solid #fed7b2",
                 borderRadius: "8px",
-                background: "white",
-                color: "#4a5568",
-                fontSize: "14px",
-                fontWeight: "600",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-              }}
-              onMouseOver={(e: React.MouseEvent<HTMLButtonElement>) => {
-                e.currentTarget.style.backgroundColor = "#f7fafc";
-              }}
-              onMouseOut={(e: React.MouseEvent<HTMLButtonElement>) => {
-                e.currentTarget.style.backgroundColor = "white";
+                padding: "12px",
+                fontSize: "12px",
+                color: "#744210",
+                lineHeight: "1.4",
               }}
             >
-              Cancel
-            </button>
+              <strong>Note:</strong> This will recalculate running balances from
+              the selected date forward. Previous dates will keep their existing
+              balances unchanged.
+            </div>
 
-            <button
-              onClick={handleSubmit}
-              disabled={!amount}
+            {/* Buttons */}
+            <div
               style={{
-                flex: 1,
-                padding: "12px 24px",
-                border: "none",
-                borderRadius: "8px",
-                background: amount
-                  ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-                  : "#e2e8f0",
-                color: "white",
-                fontSize: "14px",
-                fontWeight: "600",
-                cursor: amount ? "pointer" : "not-allowed",
-                transition: "all 0.2s ease",
-              }}
-              onMouseOver={(e: React.MouseEvent<HTMLButtonElement>) => {
-                if (amount) {
-                  e.currentTarget.style.transform = "translateY(-1px)";
-                }
-              }}
-              onMouseOut={(e: React.MouseEvent<HTMLButtonElement>) => {
-                if (amount) {
-                  e.currentTarget.style.transform = "translateY(0)";
-                }
+                display: "flex",
+                gap: "12px",
+                marginTop: "8px",
               }}
             >
-              Set Balance
-            </button>
+              <button
+                type="button"
+                onClick={handleClose}
+                style={{
+                  flex: 1,
+                  padding: "12px 24px",
+                  border: "2px solid #e2e8f0",
+                  borderRadius: "8px",
+                  background: "white",
+                  color: "#4a5568",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                }}
+                onMouseOver={(e: React.MouseEvent<HTMLButtonElement>) => {
+                  e.currentTarget.style.backgroundColor = "#f7fafc";
+                }}
+                onMouseOut={(e: React.MouseEvent<HTMLButtonElement>) => {
+                  e.currentTarget.style.backgroundColor = "white";
+                }}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                disabled={!amount}
+                style={{
+                  flex: 1,
+                  padding: "12px 24px",
+                  border: "none",
+                  borderRadius: "8px",
+                  background: amount
+                    ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                    : "#e2e8f0",
+                  color: "white",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  cursor: amount ? "pointer" : "not-allowed",
+                  transition: "all 0.2s ease",
+                }}
+                onMouseOver={(e: React.MouseEvent<HTMLButtonElement>) => {
+                  if (amount) {
+                    e.currentTarget.style.transform = "translateY(-1px)";
+                  }
+                }}
+                onMouseOut={(e: React.MouseEvent<HTMLButtonElement>) => {
+                  if (amount) {
+                    e.currentTarget.style.transform = "translateY(0)";
+                  }
+                }}
+              >
+                Adjust Balance
+              </button>
+            </div>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );

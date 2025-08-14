@@ -7,6 +7,8 @@ interface CalendarProps {
   startingBalance?: number;
   onDropItem?: (budgetItem: BudgetItem, date: string) => void;
   onDateClick?: (date: string) => void;
+  getEffectiveStartingBalance?: (date: string) => number;
+  hasBalanceAdjustment?: (date: string) => boolean;
 }
 
 const Calendar: React.FC<CalendarProps> = ({
@@ -14,6 +16,8 @@ const Calendar: React.FC<CalendarProps> = ({
   startingBalance = 0,
   onDropItem,
   onDateClick,
+  getEffectiveStartingBalance,
+  hasBalanceAdjustment,
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -86,20 +90,59 @@ const Calendar: React.FC<CalendarProps> = ({
   };
 
   const calculateRunningBalance = (throughDay: number): number => {
-    let balance = startingBalance; // Start with the starting balance
-    for (let day = 1; day <= throughDay; day++) {
-      const dayItems = getItemsForDate(day);
-      dayItems.forEach((scheduledItem) => {
-        const amount =
-          scheduledItem.amount ?? scheduledItem.budgetItem?.amount ?? 0;
-        const type = scheduledItem.budgetItem?.type ?? "expense";
-        if (type === "income") {
-          balance += amount;
-        } else {
-          balance -= amount;
+    const throughDateStr = getDateString(throughDay);
+
+    // Get the effective starting balance for this date
+    let balance = getEffectiveStartingBalance
+      ? getEffectiveStartingBalance(throughDateStr)
+      : startingBalance;
+
+    // If we have a custom starting balance function, we need to calculate
+    // from the most recent balance adjustment point, not from day 1
+    if (getEffectiveStartingBalance) {
+      // Find the most recent balance adjustment date that's <= throughDateStr
+      let calculationStartDay = 1;
+
+      // Look through all days up to throughDay to find the latest balance adjustment
+      for (let day = 1; day <= throughDay; day++) {
+        const dayDateStr = getDateString(day);
+        if (hasBalanceAdjustment && hasBalanceAdjustment(dayDateStr)) {
+          calculationStartDay = day;
+          balance = getEffectiveStartingBalance(dayDateStr);
         }
-      });
+      }
+
+      // Now calculate forward from the adjustment point
+      for (let day = calculationStartDay + 1; day <= throughDay; day++) {
+        const dayItems = getItemsForDate(day);
+        dayItems.forEach((scheduledItem) => {
+          const amount =
+            scheduledItem.amount ?? scheduledItem.budgetItem?.amount ?? 0;
+          const type = scheduledItem.budgetItem?.type ?? "expense";
+          if (type === "income") {
+            balance += amount;
+          } else {
+            balance -= amount;
+          }
+        });
+      }
+    } else {
+      // Original calculation from day 1
+      for (let day = 1; day <= throughDay; day++) {
+        const dayItems = getItemsForDate(day);
+        dayItems.forEach((scheduledItem) => {
+          const amount =
+            scheduledItem.amount ?? scheduledItem.budgetItem?.amount ?? 0;
+          const type = scheduledItem.budgetItem?.type ?? "expense";
+          if (type === "income") {
+            balance += amount;
+          } else {
+            balance -= amount;
+          }
+        });
+      }
     }
+
     return balance;
   };
 
@@ -157,6 +200,8 @@ const Calendar: React.FC<CalendarProps> = ({
       const runningBalance = calculateRunningBalance(day);
       const indicatorDot = getIndicatorDot(dayItems);
       const dateString = getDateString(day);
+      const hasAdjustment =
+        hasBalanceAdjustment && hasBalanceAdjustment(dateString);
 
       // Drag & Drop Handlers
       const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -231,6 +276,7 @@ const Calendar: React.FC<CalendarProps> = ({
             alignItems: "center",
             border: "2px dashed transparent",
             opacity: isPastDate(day) ? "0.6" : "1", // Darken past dates
+            position: "relative", // For absolute positioning of pin
           }}
           onMouseOver={(e: React.MouseEvent<HTMLDivElement>) => {
             if (!isToday(day)) {
@@ -243,6 +289,21 @@ const Calendar: React.FC<CalendarProps> = ({
             }
           }}
         >
+          {/* Balance Adjustment Pin Icon */}
+          {hasAdjustment && (
+            <div
+              style={{
+                position: "absolute",
+                top: "4px",
+                right: "4px",
+                fontSize: "12px",
+                color: isToday(day) ? "#ffdd59" : "#8c52ff",
+              }}
+            >
+              📍
+            </div>
+          )}
+
           {/* First Line: Date + Dot */}
           <div
             style={{

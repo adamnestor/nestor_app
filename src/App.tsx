@@ -6,9 +6,16 @@ import LoadingScreen from "./components/LoadingScreen";
 import ErrorScreen from "./components/ErrorScreen";
 import Calendar from "./components/Calendar";
 import DateDetailModal from "./components/DateDetailModal";
+import StartingBalanceModal from "./components/StartingBalanceModal";
 import { useBudgetItems } from "./hooks/useBudgetItems";
 import { useScheduledItems } from "./hooks/useScheduledItems";
 import type { BudgetItem } from "./types";
+
+// Interface for balance adjustments
+interface BalanceAdjustment {
+  date: string;
+  amount: number;
+}
 
 const App: React.FC = () => {
   // Custom hook handles all API calls and item state
@@ -42,11 +49,63 @@ const App: React.FC = () => {
   const [showDateDetail, setShowDateDetail] = useState<boolean>(false);
   const [selectedDate, setSelectedDate] = useState<string>("");
 
+  // Starting balance modal state
+  const [showBalanceModal, setShowBalanceModal] = useState<boolean>(false);
+
+  // Balance adjustments state - stored in memory for this session
+  const [balanceAdjustments, setBalanceAdjustments] = useState<
+    BalanceAdjustment[]
+  >([]);
+
+  // Default starting balance
+  const [baseStartingBalance] = useState<number>(2500);
+
   // Load current month's scheduled items on component mount
   useEffect(() => {
     const currentDate = new Date();
     loadMonthItems(currentDate.getFullYear(), currentDate.getMonth() + 1);
   }, [loadMonthItems]);
+
+  // Calculate effective starting balance for a given date
+  const getEffectiveStartingBalance = (forDate: string): number => {
+    // Find the most recent balance adjustment on or before the given date
+    const applicableAdjustments = balanceAdjustments
+      .filter((adj) => adj.date <= forDate)
+      .sort((a, b) => b.date.localeCompare(a.date)); // Sort by date descending
+
+    if (applicableAdjustments.length > 0) {
+      return applicableAdjustments[0].amount;
+    }
+
+    return baseStartingBalance;
+  };
+
+  // Check if a date has the most recent balance adjustment (only show pin on latest)
+  const hasBalanceAdjustment = (date: string): boolean => {
+    if (balanceAdjustments.length === 0) return false;
+
+    // Find the most recent adjustment date
+    const mostRecentAdjustment = balanceAdjustments.sort((a, b) =>
+      b.date.localeCompare(a.date)
+    )[0];
+
+    // Only show pin on the most recent adjustment date
+    return mostRecentAdjustment.date === date;
+  };
+
+  // Handle balance adjustment
+  const handleSetBalance = (date: string, amount: number): void => {
+    const newAdjustment: BalanceAdjustment = { date, amount };
+
+    // Remove any existing adjustment for this date and add the new one
+    const updatedAdjustments = balanceAdjustments
+      .filter((adj) => adj.date !== date)
+      .concat(newAdjustment)
+      .sort((a, b) => a.date.localeCompare(b.date)); // Sort by date ascending
+
+    setBalanceAdjustments(updatedAdjustments);
+    console.log(`Balance adjusted to $${amount} as of ${date}`);
+  };
 
   // Handle drag & drop from budget items to calendar
   const handleDropItem = async (
@@ -120,6 +179,15 @@ const App: React.FC = () => {
     setFormAmount("");
     setEditingItem(null);
     setShowAddForm(true);
+  };
+
+  // Handle balance button click
+  const handleBalanceClick = (): void => {
+    setShowBalanceModal(true);
+  };
+
+  const handleCloseBalanceModal = (): void => {
+    setShowBalanceModal(false);
   };
 
   const handleCloseForm = (): void => {
@@ -212,10 +280,10 @@ const App: React.FC = () => {
         boxSizing: "border-box",
       }}
     >
-      {/* LEFT PANEL - Budget App (25%) */}
+      {/* LEFT PANEL - Budget App (35%) */}
       <div
         style={{
-          width: "25%",
+          width: "35%",
           minHeight: "100vh",
           padding: "40px 20px",
           display: "flex",
@@ -233,16 +301,19 @@ const App: React.FC = () => {
             alignItems: "center",
           }}
         >
-          <HeaderButtons onAddClick={handleAddClick} />
+          <HeaderButtons
+            onAddClick={handleAddClick}
+            onBalanceClick={handleBalanceClick}
+          />
 
           <List items={items} onEdit={handleEdit} onDelete={handleDelete} />
         </div>
       </div>
 
-      {/* RIGHT PANEL - Calendar (75%) */}
+      {/* RIGHT PANEL - Calendar (65%) */}
       <div
         style={{
-          width: "75%",
+          width: "65%",
           minHeight: "100vh",
           padding: "40px",
           boxSizing: "border-box",
@@ -260,9 +331,11 @@ const App: React.FC = () => {
         >
           <Calendar
             scheduledItems={scheduledItems}
-            startingBalance={2500}
+            startingBalance={getEffectiveStartingBalance("2024-01-01")} // Use first day of year as reference
             onDropItem={handleDropItem}
             onDateClick={handleDateClick}
+            getEffectiveStartingBalance={getEffectiveStartingBalance}
+            hasBalanceAdjustment={hasBalanceAdjustment}
           />
         </div>
       </div>
@@ -289,6 +362,12 @@ const App: React.FC = () => {
         onClose={handleCloseDateDetail}
         onEditItem={handleEditScheduledItem}
         onDeleteItem={handleDeleteScheduledItem}
+      />
+
+      <StartingBalanceModal
+        showModal={showBalanceModal}
+        onClose={handleCloseBalanceModal}
+        onSetBalance={handleSetBalance}
       />
     </div>
   );
