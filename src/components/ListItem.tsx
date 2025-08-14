@@ -8,8 +8,8 @@ const ListItem: React.FC<ListItemProps> = ({ item, onEdit, onDelete }) => {
       style={{
         background:
           item.type === "expense"
-            ? "linear-gradient(135deg, #8c52ff 0%, #5ce1c6 100%)"
-            : "linear-gradient(135deg, #ff66c4 0%, #ffde59 100%)",
+            ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+            : "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
         borderRadius: "50px",
         padding: "3px",
         width: "100%",
@@ -29,7 +29,7 @@ const ListItem: React.FC<ListItemProps> = ({ item, onEdit, onDelete }) => {
     >
       <div
         style={{
-          background: "#2a2d3a",
+          background: "white",
           borderRadius: "47px",
           padding: "18px 30px",
           display: "flex",
@@ -44,7 +44,7 @@ const ListItem: React.FC<ListItemProps> = ({ item, onEdit, onDelete }) => {
           style={{
             fontSize: "18px",
             fontWeight: "500",
-            color: "#e5e7eb",
+            color: "#2d3748",
           }}
         >
           {item.name}
@@ -61,7 +61,7 @@ const ListItem: React.FC<ListItemProps> = ({ item, onEdit, onDelete }) => {
             style={{
               fontSize: "20px",
               fontWeight: "700",
-              color: item.type === "expense" ? "#8c52ff" : "#ff66c4",
+              color: item.type === "expense" ? "#667eea" : "#f5576c",
             }}
           >
             ${item.amount.toFixed(2)}

@@ -22,7 +22,8 @@ const App: React.FC = () => {
   } = useBudgetItems();
 
   // Custom hook for scheduled items (calendar data)
-  const { scheduledItems, loadMonthItems } = useScheduledItems();
+  const { scheduledItems, loadMonthItems, createScheduledItem } =
+    useScheduledItems();
 
   // Form state
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
@@ -36,6 +37,29 @@ const App: React.FC = () => {
     const currentDate = new Date();
     loadMonthItems(currentDate.getFullYear(), currentDate.getMonth() + 1);
   }, [loadMonthItems]);
+
+  // Handle drag & drop from budget items to calendar
+  const handleDropItem = async (
+    budgetItem: BudgetItem,
+    date: string
+  ): Promise<void> => {
+    try {
+      const success = await createScheduledItem({
+        budgetItemId: budgetItem.id,
+        date: date,
+        // Use original amount and name (no overrides for MVP)
+      });
+
+      if (success) {
+        console.log(`Successfully scheduled "${budgetItem.name}" for ${date}`);
+      } else {
+        alert("Failed to schedule item");
+      }
+    } catch (error) {
+      console.error("Error scheduling item:", error);
+      alert("An error occurred while scheduling the item");
+    }
+  };
 
   // Form Handlers
   const handleAddClick = (type: "expense" | "income"): void => {
@@ -123,7 +147,7 @@ const App: React.FC = () => {
     return <ErrorScreen error={error} onRetry={refreshItems} />;
   }
 
-  // Main app render - Two Panel Layout
+  // Main app render - Two Panel Layout with single background
   return (
     <div
       style={{
@@ -182,7 +206,11 @@ const App: React.FC = () => {
             maxWidth: "800px",
           }}
         >
-          <Calendar scheduledItems={scheduledItems} startingBalance={2500} />
+          <Calendar
+            scheduledItems={scheduledItems}
+            startingBalance={2500}
+            onDropItem={handleDropItem}
+          />
         </div>
       </div>
 

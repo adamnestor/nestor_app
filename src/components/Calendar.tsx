@@ -1,15 +1,17 @@
 import React, { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import type { ScheduledBudgetItem } from "../types";
+import type { ScheduledBudgetItem, BudgetItem } from "../types";
 
 interface CalendarProps {
   scheduledItems?: ScheduledBudgetItem[];
   startingBalance?: number;
+  onDropItem?: (budgetItem: BudgetItem, date: string) => void;
 }
 
 const Calendar: React.FC<CalendarProps> = ({
   scheduledItems = [],
   startingBalance = 0,
+  onDropItem,
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -143,10 +145,58 @@ const Calendar: React.FC<CalendarProps> = ({
       const dayItems = getItemsForDate(day);
       const runningBalance = calculateRunningBalance(day);
       const indicatorDot = getIndicatorDot(dayItems);
+      const dateString = getDateString(day);
+
+      // Drag & Drop Handlers
+      const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault(); // Allow drop
+        e.dataTransfer.dropEffect = "copy";
+      };
+
+      const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+
+        // Reset visual feedback
+        e.currentTarget.style.backgroundColor = isToday(day)
+          ? "#8c52ff"
+          : "transparent";
+        e.currentTarget.style.border = "2px dashed transparent";
+
+        try {
+          const budgetItemData = e.dataTransfer.getData("application/json");
+          const budgetItem = JSON.parse(budgetItemData);
+
+          if (onDropItem) {
+            onDropItem(budgetItem, dateString);
+          }
+        } catch (error) {
+          console.error("Error parsing dropped data:", error);
+        }
+      };
+
+      const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.currentTarget.style.backgroundColor = isToday(day)
+          ? "#8c52ff"
+          : "#e2e8f0";
+        e.currentTarget.style.border = "2px dashed #8c52ff";
+      };
+
+      const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.currentTarget.style.backgroundColor = isToday(day)
+          ? "#8c52ff"
+          : "transparent";
+        e.currentTarget.style.border = "2px dashed transparent";
+      };
 
       days.push(
         <div
           key={day}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
           style={{
             padding: "8px",
             minHeight: "60px",
@@ -159,6 +209,7 @@ const Calendar: React.FC<CalendarProps> = ({
             flexDirection: "column",
             justifyContent: "flex-start",
             alignItems: "center",
+            border: "2px dashed transparent",
           }}
           onMouseOver={(e: React.MouseEvent<HTMLDivElement>) => {
             if (!isToday(day)) {
@@ -210,12 +261,9 @@ const Calendar: React.FC<CalendarProps> = ({
                   : "#718096",
             }}
           >
-            {runningBalance !== 0 &&
-              `${
-                runningBalance < 0
-                  ? `-$${Math.abs(runningBalance).toFixed(0)}`
-                  : `$${runningBalance.toFixed(0)}`
-              }`}
+            {runningBalance < 0
+              ? `-$${Math.abs(runningBalance).toFixed(0)}`
+              : `$${runningBalance.toFixed(0)}`}
           </div>
         </div>
       );
