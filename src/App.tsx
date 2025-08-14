@@ -3,13 +3,21 @@ import List from "./components/List";
 import AddFormModal from "./components/AddFormModal";
 import HeaderButtons from "./components/HeaderButtons";
 import LoadingScreen from "./components/LoadingScreen";
+import ErrorScreen from "./components/ErrorScreen";
 import { useBudgetItems } from "./hooks/useBudgetItems";
 import type { BudgetItem } from "./types";
 
 const App: React.FC = () => {
   // Custom hook handles all API calls and item state
-  const { items, loading, error, createItem, updateItem, deleteItem } =
-    useBudgetItems();
+  const {
+    items,
+    loading,
+    error,
+    createItem,
+    updateItem,
+    deleteItem,
+    refreshItems,
+  } = useBudgetItems();
 
   // Form state (could be extracted to another hook later)
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
@@ -99,26 +107,9 @@ const App: React.FC = () => {
     return <LoadingScreen />;
   }
 
-  // Show error state (optional)
+  // Show error state
   if (error) {
-    return (
-      <div
-        style={{
-          minHeight: "100vh",
-          width: "100vw",
-          background: "linear-gradient(135deg, #2d3748 0%, #4a5568 100%)",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          fontSize: "18px",
-          color: "#e5e7eb",
-          fontFamily:
-            '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        }}
-      >
-        Error: {error}
-      </div>
-    );
+    return <ErrorScreen error={error} onRetry={refreshItems} />;
   }
 
   // Main app render
