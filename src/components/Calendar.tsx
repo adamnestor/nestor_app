@@ -6,12 +6,14 @@ interface CalendarProps {
   scheduledItems?: ScheduledBudgetItem[];
   startingBalance?: number;
   onDropItem?: (budgetItem: BudgetItem, date: string) => void;
+  onDateClick?: (date: string) => void;
 }
 
 const Calendar: React.FC<CalendarProps> = ({
   scheduledItems = [],
   startingBalance = 0,
   onDropItem,
+  onDateClick,
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -189,9 +191,18 @@ const Calendar: React.FC<CalendarProps> = ({
         e.currentTarget.style.border = "2px dashed transparent";
       };
 
+      // Click handler for date detail modal
+      const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        // Only handle click if not currently dragging
+        if (onDateClick && !e.defaultPrevented) {
+          onDateClick(dateString);
+        }
+      };
+
       days.push(
         <div
           key={day}
+          onClick={handleClick}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
           onDragEnter={handleDragEnter}

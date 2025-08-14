@@ -5,6 +5,7 @@ import HeaderButtons from "./components/HeaderButtons";
 import LoadingScreen from "./components/LoadingScreen";
 import ErrorScreen from "./components/ErrorScreen";
 import Calendar from "./components/Calendar";
+import DateDetailModal from "./components/DateDetailModal";
 import { useBudgetItems } from "./hooks/useBudgetItems";
 import { useScheduledItems } from "./hooks/useScheduledItems";
 import type { BudgetItem } from "./types";
@@ -22,8 +23,13 @@ const App: React.FC = () => {
   } = useBudgetItems();
 
   // Custom hook for scheduled items (calendar data)
-  const { scheduledItems, loadMonthItems, createScheduledItem } =
-    useScheduledItems();
+  const {
+    scheduledItems,
+    loadMonthItems,
+    createScheduledItem,
+    updateScheduledItem,
+    deleteScheduledItem,
+  } = useScheduledItems();
 
   // Form state
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
@@ -31,6 +37,10 @@ const App: React.FC = () => {
   const [editingItem, setEditingItem] = useState<BudgetItem | null>(null);
   const [formName, setFormName] = useState<string>("");
   const [formAmount, setFormAmount] = useState<string>("");
+
+  // Date detail modal state
+  const [showDateDetail, setShowDateDetail] = useState<boolean>(false);
+  const [selectedDate, setSelectedDate] = useState<string>("");
 
   // Load current month's scheduled items on component mount
   useEffect(() => {
@@ -58,6 +68,48 @@ const App: React.FC = () => {
     } catch (error) {
       console.error("Error scheduling item:", error);
       alert("An error occurred while scheduling the item");
+    }
+  };
+
+  // Handle date click to show detail modal
+  const handleDateClick = (date: string): void => {
+    setSelectedDate(date);
+    setShowDateDetail(true);
+  };
+
+  const handleCloseDateDetail = (): void => {
+    setShowDateDetail(false);
+    setSelectedDate("");
+  };
+
+  // Handle editing scheduled items from date detail modal
+  const handleEditScheduledItem = async (
+    id: number,
+    updates: { amount?: number; name?: string }
+  ): Promise<void> => {
+    const existingItem = scheduledItems.find((item) => item.id === id);
+
+    if (!existingItem) {
+      alert("Item not found");
+      return;
+    }
+
+    const success = await updateScheduledItem(id, {
+      budgetItemId: existingItem.budgetItemId,
+      date: selectedDate,
+      ...updates,
+    });
+
+    if (!success) {
+      alert("Failed to update item");
+    }
+  };
+
+  // Handle deleting scheduled items from date detail modal
+  const handleDeleteScheduledItem = async (id: number): Promise<void> => {
+    const success = await deleteScheduledItem(id);
+    if (!success) {
+      alert("Failed to delete item");
     }
   };
 
@@ -210,11 +262,12 @@ const App: React.FC = () => {
             scheduledItems={scheduledItems}
             startingBalance={2500}
             onDropItem={handleDropItem}
+            onDateClick={handleDateClick}
           />
         </div>
       </div>
 
-      {/* Modal (overlays both panels) */}
+      {/* Modals (overlay both panels) */}
       <AddFormModal
         showForm={showAddForm}
         formType={formType}
@@ -225,6 +278,17 @@ const App: React.FC = () => {
         onAmountChange={setFormAmount}
         onClose={handleCloseForm}
         onSubmit={handleSubmitForm}
+      />
+
+      <DateDetailModal
+        showModal={showDateDetail}
+        selectedDate={selectedDate}
+        scheduledItems={scheduledItems.filter(
+          (item) => item.date === selectedDate
+        )}
+        onClose={handleCloseDateDetail}
+        onEditItem={handleEditScheduledItem}
+        onDeleteItem={handleDeleteScheduledItem}
       />
     </div>
   );
