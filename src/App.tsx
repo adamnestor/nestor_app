@@ -60,11 +60,16 @@ const App: React.FC = () => {
   // Default starting balance
   const [baseStartingBalance] = useState<number>(2500);
 
+  // Current month state for tracking what's scheduled
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+
   // Load current month's scheduled items on component mount
   useEffect(() => {
     const currentDate = new Date();
+    setCurrentMonth(currentDate);
     loadMonthItems(currentDate.getFullYear(), currentDate.getMonth() + 1);
-  }, [loadMonthItems]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Calculate effective starting balance for a given date
   const getEffectiveStartingBalance = (forDate: string): number => {
@@ -105,6 +110,12 @@ const App: React.FC = () => {
 
     setBalanceAdjustments(updatedAdjustments);
     console.log(`Balance adjusted to $${amount} as of ${date}`);
+  };
+
+  // Handle month change from calendar
+  const handleMonthChange = (newMonth: Date): void => {
+    setCurrentMonth(newMonth);
+    loadMonthItems(newMonth.getFullYear(), newMonth.getMonth() + 1);
   };
 
   // Handle drag & drop from budget items to calendar
@@ -339,7 +350,13 @@ const App: React.FC = () => {
             onBalanceClick={handleBalanceClick}
           />
 
-          <List items={items} onEdit={handleEdit} onDelete={handleDelete} />
+          <List
+            items={items}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            scheduledItems={scheduledItems}
+            currentMonth={currentMonth}
+          />
         </div>
       </div>
 
@@ -370,6 +387,7 @@ const App: React.FC = () => {
             onDateClick={handleDateClick}
             getEffectiveStartingBalance={getEffectiveStartingBalance}
             hasBalanceAdjustment={hasBalanceAdjustment}
+            onMonthChange={handleMonthChange}
           />
         </div>
       </div>

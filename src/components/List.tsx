@@ -1,8 +1,19 @@
 import React from "react";
 import ListItem from "./ListItem";
-import type { ListProps } from "../types";
+import type { ListProps, ScheduledBudgetItem } from "../types";
 
-const List: React.FC<ListProps> = ({ items, onEdit, onDelete }) => {
+interface ExtendedListProps extends ListProps {
+  scheduledItems: ScheduledBudgetItem[];
+  currentMonth: Date;
+}
+
+const List: React.FC<ExtendedListProps> = ({
+  items,
+  onEdit,
+  onDelete,
+  scheduledItems,
+  currentMonth,
+}) => {
   return (
     <div
       style={{
@@ -18,6 +29,8 @@ const List: React.FC<ListProps> = ({ items, onEdit, onDelete }) => {
           item={item}
           onEdit={onEdit}
           onDelete={onDelete}
+          scheduledItems={scheduledItems}
+          currentMonth={currentMonth}
         />
       ))}
     </div>

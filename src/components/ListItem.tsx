@@ -1,8 +1,41 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Edit2, Trash2 } from "lucide-react";
-import type { ListItemProps } from "../types";
+import type { ListItemProps, ScheduledBudgetItem } from "../types";
 
-const ListItem: React.FC<ListItemProps> = ({ item, onEdit, onDelete }) => {
+interface ExtendedListItemProps extends ListItemProps {
+  scheduledItems: ScheduledBudgetItem[];
+  currentMonth: Date;
+}
+
+const ListItem: React.FC<ExtendedListItemProps> = ({
+  item,
+  onEdit,
+  onDelete,
+  scheduledItems,
+  currentMonth,
+}) => {
+  // Memoized calculation to check if this item has been scheduled in the current month
+  const hasInstanceThisMonth = useMemo(() => {
+    const year = currentMonth.getFullYear();
+    const month = String(currentMonth.getMonth() + 1).padStart(2, "0");
+    const monthPrefix = `${year}-${month}`;
+
+    console.log(
+      "Checking month prefix:",
+      monthPrefix,
+      "for item:",
+      item.name,
+      "scheduled items:",
+      scheduledItems.length
+    );
+
+    return scheduledItems.some(
+      (scheduledItem) =>
+        scheduledItem.budgetItemId === item.id &&
+        scheduledItem.date.startsWith(monthPrefix)
+    );
+  }, [scheduledItems, currentMonth, item.id, item.name]);
+
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
     // Set the data to be transferred (the budget item)
     e.dataTransfer.setData("application/json", JSON.stringify(item));
@@ -46,8 +79,8 @@ const ListItem: React.FC<ListItemProps> = ({ item, onEdit, onDelete }) => {
       style={{
         background:
           item.type === "expense"
-            ? "linear-gradient(135deg, #8c52ff 0%, #5ce1e6 100%)"
-            : "linear-gradient(135deg, #ff66c4 0%, #ffde59 100%)",
+            ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+            : "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
         borderRadius: "50px",
         padding: "3px",
         width: "100%",
@@ -79,16 +112,37 @@ const ListItem: React.FC<ListItemProps> = ({ item, onEdit, onDelete }) => {
           boxSizing: "border-box",
         }}
       >
-        <span
+        <div
           style={{
-            fontSize: "18px",
-            fontWeight: "500",
-            color: "#2d3748",
-            pointerEvents: "none", // Prevent text selection during drag
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
           }}
         >
-          {item.name}
-        </span>
+          <span
+            style={{
+              fontSize: "18px",
+              fontWeight: "500",
+              color: "#2d3748",
+              pointerEvents: "none", // Prevent text selection during drag
+            }}
+          >
+            {item.name}
+          </span>
+
+          {/* Calendar icon if scheduled this month */}
+          {hasInstanceThisMonth && (
+            <span
+              style={{
+                fontSize: "14px",
+                opacity: "0.7",
+              }}
+              title="Scheduled this month"
+            >
+              📅
+            </span>
+          )}
+        </div>
 
         <div
           style={{

@@ -9,6 +9,7 @@ interface CalendarProps {
   onDateClick?: (date: string) => void;
   getEffectiveStartingBalance?: (date: string) => number;
   hasBalanceAdjustment?: (date: string) => boolean;
+  onMonthChange?: (date: Date) => void;
 }
 
 const Calendar: React.FC<CalendarProps> = ({
@@ -18,6 +19,7 @@ const Calendar: React.FC<CalendarProps> = ({
   onDateClick,
   getEffectiveStartingBalance,
   hasBalanceAdjustment,
+  onMonthChange,
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -47,15 +49,29 @@ const Calendar: React.FC<CalendarProps> = ({
   };
 
   const goToPreviousMonth = (): void => {
-    setCurrentDate(
-      new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1)
+    const newDate = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth() - 1,
+      1
     );
+    setCurrentDate(newDate);
+    console.log("Previous month clicked, new date:", newDate);
+    if (onMonthChange) {
+      onMonthChange(newDate);
+    }
   };
 
   const goToNextMonth = (): void => {
-    setCurrentDate(
-      new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1)
+    const newDate = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth() + 1,
+      1
     );
+    setCurrentDate(newDate);
+    console.log("Next month clicked, new date:", newDate);
+    if (onMonthChange) {
+      onMonthChange(newDate);
+    }
   };
 
   const isToday = (day: number): boolean => {
@@ -113,7 +129,16 @@ const Calendar: React.FC<CalendarProps> = ({
       }
 
       // Now calculate forward from the adjustment point
-      for (let day = calculationStartDay + 1; day <= throughDay; day++) {
+      for (let day = calculationStartDay; day <= throughDay; day++) {
+        // Skip the adjustment day itself to avoid double-counting the balance
+        if (
+          day === calculationStartDay &&
+          hasBalanceAdjustment &&
+          hasBalanceAdjustment(getDateString(day))
+        ) {
+          continue;
+        }
+
         const dayItems = getItemsForDate(day);
         dayItems.forEach((scheduledItem) => {
           const amount =
@@ -213,8 +238,8 @@ const Calendar: React.FC<CalendarProps> = ({
         e.preventDefault();
 
         // Reset visual feedback
-        e.currentTarget.style.backgroundColor = isToday(day)
-          ? "#8c52ff"
+        e.currentTarget.style.background = isToday(day)
+          ? "linear-gradient(135deg, #8c52ff 0%, #5ce1e6 100%)"
           : "transparent";
         e.currentTarget.style.border = "2px dashed transparent";
 
@@ -232,16 +257,16 @@ const Calendar: React.FC<CalendarProps> = ({
 
       const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
-        e.currentTarget.style.backgroundColor = isToday(day)
-          ? "#8c52ff"
-          : "#e2e8f0";
+        e.currentTarget.style.background = isToday(day)
+          ? "linear-gradient(135deg, #8c52ff 0%, #5ce1e6 100%)"
+          : "linear-gradient(135deg, rgba(140, 82, 255, 0.1) 0%, rgba(92, 225, 230, 0.1) 100%)";
         e.currentTarget.style.border = "2px dashed #8c52ff";
       };
 
       const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
-        e.currentTarget.style.backgroundColor = isToday(day)
-          ? "#8c52ff"
+        e.currentTarget.style.background = isToday(day)
+          ? "linear-gradient(135deg, #8c52ff 0%, #5ce1e6 100%)"
           : "transparent";
         e.currentTarget.style.border = "2px dashed transparent";
       };
@@ -268,7 +293,9 @@ const Calendar: React.FC<CalendarProps> = ({
             borderRadius: "8px",
             cursor: "pointer",
             transition: "all 0.2s ease",
-            backgroundColor: isToday(day) ? "#8c52ff" : "transparent",
+            background: isToday(day)
+              ? "linear-gradient(135deg, #8c52ff 0%, #5ce1e6 100%)"
+              : "transparent",
             color: isToday(day) ? "white" : "#2d3748",
             display: "flex",
             flexDirection: "column",
@@ -280,12 +307,13 @@ const Calendar: React.FC<CalendarProps> = ({
           }}
           onMouseOver={(e: React.MouseEvent<HTMLDivElement>) => {
             if (!isToday(day)) {
-              e.currentTarget.style.backgroundColor = "#e2e8f0";
+              e.currentTarget.style.background =
+                "linear-gradient(135deg, rgba(140, 82, 255, 0.05) 0%, rgba(92, 225, 230, 0.05) 100%)";
             }
           }}
           onMouseOut={(e: React.MouseEvent<HTMLDivElement>) => {
             if (!isToday(day)) {
-              e.currentTarget.style.backgroundColor = "transparent";
+              e.currentTarget.style.background = "transparent";
             }
           }}
         >

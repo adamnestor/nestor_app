@@ -70,11 +70,11 @@ export const useScheduledItems = (): UseScheduledItemsReturn => {
       });
 
       if (response.ok) {
-        // Refresh current month's items
-        const currentDate = new Date();
+        // Refresh the month where the item was dropped (not current month)
+        const droppedDate = new Date(itemData.date + "T00:00:00");
         await loadMonthItems(
-          currentDate.getFullYear(),
-          currentDate.getMonth() + 1
+          droppedDate.getFullYear(),
+          droppedDate.getMonth() + 1
         );
         return true;
       } else {
@@ -104,11 +104,11 @@ export const useScheduledItems = (): UseScheduledItemsReturn => {
       });
 
       if (response.ok) {
-        // Refresh current month's items
-        const currentDate = new Date();
+        // Refresh the month where the item was updated
+        const updatedDate = new Date(itemData.date + "T00:00:00");
         await loadMonthItems(
-          currentDate.getFullYear(),
-          currentDate.getMonth() + 1
+          updatedDate.getFullYear(),
+          updatedDate.getMonth() + 1
         );
         return true;
       } else {
@@ -126,17 +126,30 @@ export const useScheduledItems = (): UseScheduledItemsReturn => {
   const deleteScheduledItem = async (id: number): Promise<boolean> => {
     try {
       setError(null);
+
+      // Find the item to get its date before deleting
+      const itemToDelete = scheduledItems.find((item) => item.id === id);
+
       const response = await fetch(`${API_BASE_URL}/${id}`, {
         method: "DELETE",
       });
 
       if (response.ok) {
-        // Refresh current month's items
-        const currentDate = new Date();
-        await loadMonthItems(
-          currentDate.getFullYear(),
-          currentDate.getMonth() + 1
-        );
+        // Refresh the month where the item was deleted
+        if (itemToDelete) {
+          const deletedDate = new Date(itemToDelete.date + "T00:00:00");
+          await loadMonthItems(
+            deletedDate.getFullYear(),
+            deletedDate.getMonth() + 1
+          );
+        } else {
+          // Fallback: refresh current month if we can't find the item
+          const currentDate = new Date();
+          await loadMonthItems(
+            currentDate.getFullYear(),
+            currentDate.getMonth() + 1
+          );
+        }
         return true;
       } else {
         setError("Failed to delete scheduled item");
