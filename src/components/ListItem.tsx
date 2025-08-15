@@ -218,7 +218,7 @@ const ListItem: React.FC<ExtendedListItemProps> = ({
               }}
               title="Scheduled this month"
             >
-              📅
+              ✅
             </span>
           )}
         </div>

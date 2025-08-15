@@ -339,7 +339,7 @@ const App: React.FC = () => {
         <div
           style={{
             width: "100%",
-            maxWidth: "400px",
+            maxWidth: "600px",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
