@@ -7,7 +7,6 @@ interface CalendarProps {
   startingBalance?: number;
   onDropItem?: (budgetItem: BudgetItem, date: string) => void;
   onDateClick?: (date: string) => void;
-  getEffectiveStartingBalance?: (date: string) => number;
   hasBalanceAdjustment?: (date: string) => boolean;
   onMonthChange?: (date: Date) => void;
 }
@@ -17,7 +16,6 @@ const Calendar: React.FC<CalendarProps> = ({
   startingBalance = 0,
   onDropItem,
   onDateClick,
-  getEffectiveStartingBalance,
   hasBalanceAdjustment,
   onMonthChange,
 }) => {
@@ -106,68 +104,30 @@ const Calendar: React.FC<CalendarProps> = ({
   };
 
   const calculateRunningBalance = (throughDay: number): number => {
-    const throughDateStr = getDateString(throughDay);
+    // Start with the month's starting balance (now includes carryover from previous month)
+    let balance = startingBalance;
 
-    // Get the effective starting balance for this date
-    let balance = getEffectiveStartingBalance
-      ? getEffectiveStartingBalance(throughDateStr)
-      : startingBalance;
+    console.log(
+      `Calculating balance for day ${throughDay}, starting with: ${balance}`
+    );
 
-    // If we have a custom starting balance function, we need to calculate
-    // from the most recent balance adjustment point, not from day 1
-    if (getEffectiveStartingBalance) {
-      // Find the most recent balance adjustment date that's <= throughDateStr
-      let calculationStartDay = 1;
+    // Calculate forward from day 1 through the specified day
+    for (let day = 1; day <= throughDay; day++) {
+      const dayItems = getItemsForDate(day);
+      dayItems.forEach((scheduledItem: ScheduledBudgetItem) => {
+        const amount =
+          scheduledItem.amount ?? scheduledItem.budgetItem?.amount ?? 0;
+        const type = scheduledItem.budgetItem?.type ?? "expense";
 
-      // Look through all days up to throughDay to find the latest balance adjustment
-      for (let day = 1; day <= throughDay; day++) {
-        const dayDateStr = getDateString(day);
-        if (hasBalanceAdjustment && hasBalanceAdjustment(dayDateStr)) {
-          calculationStartDay = day;
-          balance = getEffectiveStartingBalance(dayDateStr);
+        if (type === "income") {
+          balance += amount;
+        } else {
+          balance -= amount;
         }
-      }
-
-      // Now calculate forward from the adjustment point
-      for (let day = calculationStartDay; day <= throughDay; day++) {
-        // Skip the adjustment day itself to avoid double-counting the balance
-        if (
-          day === calculationStartDay &&
-          hasBalanceAdjustment &&
-          hasBalanceAdjustment(getDateString(day))
-        ) {
-          continue;
-        }
-
-        const dayItems = getItemsForDate(day);
-        dayItems.forEach((scheduledItem) => {
-          const amount =
-            scheduledItem.amount ?? scheduledItem.budgetItem?.amount ?? 0;
-          const type = scheduledItem.budgetItem?.type ?? "expense";
-          if (type === "income") {
-            balance += amount;
-          } else {
-            balance -= amount;
-          }
-        });
-      }
-    } else {
-      // Original calculation from day 1
-      for (let day = 1; day <= throughDay; day++) {
-        const dayItems = getItemsForDate(day);
-        dayItems.forEach((scheduledItem) => {
-          const amount =
-            scheduledItem.amount ?? scheduledItem.budgetItem?.amount ?? 0;
-          const type = scheduledItem.budgetItem?.type ?? "expense";
-          if (type === "income") {
-            balance += amount;
-          } else {
-            balance -= amount;
-          }
-        });
-      }
+      });
     }
 
+    console.log(`Final balance for day ${throughDay}: ${balance}`);
     return balance;
   };
 

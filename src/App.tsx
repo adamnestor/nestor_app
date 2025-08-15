@@ -64,6 +64,10 @@ const App: React.FC = () => {
   // Current month state for tracking what's scheduled
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
+  // Dynamic starting balance that updates based on month carryover
+  const [currentMonthStartingBalance, setCurrentMonthStartingBalance] =
+    useState<number>(baseStartingBalance);
+
   // Load current month's scheduled items on component mount
   useEffect(() => {
     const currentDate = new Date();
@@ -71,20 +75,6 @@ const App: React.FC = () => {
     loadMonthItems(currentDate.getFullYear(), currentDate.getMonth() + 1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Calculate effective starting balance for a given date
-  const getEffectiveStartingBalance = (forDate: string): number => {
-    // Find the most recent balance adjustment on or before the given date
-    const applicableAdjustments = balanceAdjustments
-      .filter((adj) => adj.date <= forDate)
-      .sort((a, b) => b.date.localeCompare(a.date)); // Sort by date descending
-
-    if (applicableAdjustments.length > 0) {
-      return applicableAdjustments[0].amount;
-    }
-
-    return baseStartingBalance;
-  };
 
   // Check if a date has the most recent balance adjustment (only show pin on latest)
   const hasBalanceAdjustment = (date: string): boolean => {
@@ -114,9 +104,51 @@ const App: React.FC = () => {
   };
 
   // Handle month change from calendar
-  const handleMonthChange = (newMonth: Date): void => {
+  const handleMonthChange = async (newMonth: Date): Promise<void> => {
     setCurrentMonth(newMonth);
     loadMonthItems(newMonth.getFullYear(), newMonth.getMonth() + 1);
+
+    // Get starting balance for this month using backend API
+    try {
+      const adjustmentDate =
+        balanceAdjustments.length > 0
+          ? balanceAdjustments[balanceAdjustments.length - 1].date
+          : null;
+      const adjustmentAmount =
+        balanceAdjustments.length > 0
+          ? balanceAdjustments[balanceAdjustments.length - 1].amount
+          : null;
+
+      const params = new URLSearchParams({
+        year: newMonth.getFullYear().toString(),
+        month: (newMonth.getMonth() + 1).toString(),
+        baseStartingBalance: baseStartingBalance.toString(),
+      });
+
+      if (adjustmentDate) params.append("adjustmentDate", adjustmentDate);
+      if (adjustmentAmount !== null)
+        params.append("adjustmentAmount", adjustmentAmount.toString());
+
+      const response = await fetch(
+        `http://localhost:8080/api/balance/month-start?${params}`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setCurrentMonthStartingBalance(data.startingBalance);
+        console.log(
+          `${newMonth.getFullYear()}-${newMonth.getMonth() + 1} starts with: $${
+            data.startingBalance
+          }`
+        );
+      } else {
+        console.warn("API call failed, using base balance");
+        setCurrentMonthStartingBalance(baseStartingBalance);
+      }
+    } catch (error) {
+      console.error("Error fetching month starting balance:", error);
+      setCurrentMonthStartingBalance(baseStartingBalance);
+    }
   };
 
   // Handle drag & drop from budget items to calendar
@@ -293,7 +325,7 @@ const App: React.FC = () => {
         overflow: "hidden", // Prevent main container from scrolling
       }}
     >
-      {/* LEFT PANEL - Budget App (35%) - Scrollable */}
+      {/* LEFT PANEL - Budget App (40%) - Scrollable */}
       <div
         style={{
           width: "40%",
@@ -362,7 +394,7 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      {/* RIGHT PANEL - Calendar (65%) - Fixed/Stationary */}
+      {/* RIGHT PANEL - Calendar (60%) - Fixed/Stationary */}
       <div
         style={{
           width: "60%",
@@ -384,10 +416,9 @@ const App: React.FC = () => {
         >
           <Calendar
             scheduledItems={scheduledItems}
-            startingBalance={getEffectiveStartingBalance("2024-01-01")} // Use first day of year as reference
+            startingBalance={currentMonthStartingBalance}
             onDropItem={handleDropItem}
             onDateClick={handleDateClick}
-            getEffectiveStartingBalance={getEffectiveStartingBalance}
             hasBalanceAdjustment={hasBalanceAdjustment}
             onMonthChange={handleMonthChange}
           />
