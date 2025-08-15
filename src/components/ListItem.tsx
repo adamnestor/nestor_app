@@ -1,10 +1,17 @@
-import React, { useMemo } from "react";
-import { Edit2, Trash2 } from "lucide-react";
-import type { ListItemProps, ScheduledBudgetItem } from "../types";
+import React, { useMemo, useState } from "react";
+import { Edit2, Trash2, GripVertical } from "lucide-react";
+import type {
+  ListItemProps,
+  ScheduledBudgetItem,
+  ReorderDragData,
+} from "../types";
 
 interface ExtendedListItemProps extends ListItemProps {
   scheduledItems: ScheduledBudgetItem[];
   currentMonth: Date;
+  itemIndex: number;
+  onReorderDragStart: () => void;
+  onReorderDragEnd: () => void;
 }
 
 const ListItem: React.FC<ExtendedListItemProps> = ({
@@ -13,41 +20,68 @@ const ListItem: React.FC<ExtendedListItemProps> = ({
   onDelete,
   scheduledItems,
   currentMonth,
+  itemIndex,
+  onReorderDragStart,
+  onReorderDragEnd,
 }) => {
+  const [isReorderDragging, setIsReorderDragging] = useState(false);
+
   // Memoized calculation to check if this item has been scheduled in the current month
   const hasInstanceThisMonth = useMemo(() => {
     const year = currentMonth.getFullYear();
     const month = String(currentMonth.getMonth() + 1).padStart(2, "0");
     const monthPrefix = `${year}-${month}`;
 
-    console.log(
-      "Checking month prefix:",
-      monthPrefix,
-      "for item:",
-      item.name,
-      "scheduled items:",
-      scheduledItems.length
-    );
-
     return scheduledItems.some(
       (scheduledItem) =>
         scheduledItem.budgetItemId === item.id &&
         scheduledItem.date.startsWith(monthPrefix)
     );
-  }, [scheduledItems, currentMonth, item.id, item.name]);
+  }, [scheduledItems, currentMonth, item.id]);
 
-  const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
-    // Set the data to be transferred (the budget item)
+  // Handle reorder drag (from grip handle)
+  const handleReorderDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+    console.log("Reorder drag start for item:", item.name);
+
+    const reorderData: ReorderDragData = {
+      type: "reorder",
+      item,
+      sourceIndex: itemIndex,
+    };
+
+    e.dataTransfer.setData("application/json", JSON.stringify(reorderData));
+    e.dataTransfer.effectAllowed = "move";
+
+    setIsReorderDragging(true);
+    onReorderDragStart();
+  };
+
+  const handleReorderDragEnd = () => {
+    console.log("Reorder drag end for item:", item.name);
+    setIsReorderDragging(false);
+    onReorderDragEnd();
+  };
+
+  // Handle calendar drag (from main item body)
+  const handleCalendarDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+    console.log("Calendar drag start for item:", item.name);
+
+    // Prevent calendar drag if currently doing reorder drag
+    if (isReorderDragging) {
+      e.preventDefault();
+      return;
+    }
+
+    // For backward compatibility, set the old format that calendar expects
     e.dataTransfer.setData("application/json", JSON.stringify(item));
     e.dataTransfer.effectAllowed = "copy";
 
-    // Create a custom drag image that's less transparent
+    // Create a custom drag image
     const dragImage = e.currentTarget.cloneNode(true) as HTMLElement;
-    dragImage.style.opacity = "0.8"; // Less transparent (default is around 0.5)
-    dragImage.style.transform = "rotate(-5deg)"; // Optional: slight rotation for visual feedback
+    dragImage.style.opacity = "0.8";
+    dragImage.style.transform = "rotate(-5deg)";
     dragImage.style.pointerEvents = "none";
 
-    // Temporarily add to DOM to render, then remove
     document.body.appendChild(dragImage);
     e.dataTransfer.setDragImage(
       dragImage,
@@ -55,27 +89,19 @@ const ListItem: React.FC<ExtendedListItemProps> = ({
       e.nativeEvent.offsetY
     );
 
-    // Clean up after a brief moment
     setTimeout(() => {
       if (document.body.contains(dragImage)) {
         document.body.removeChild(dragImage);
       }
     }, 0);
-
-    // Change cursor during drag
-    e.currentTarget.style.cursor = "grabbing";
   };
 
-  const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
-    // Reset cursor after drag
-    e.currentTarget.style.cursor = "grab";
+  const handleCalendarDragEnd = () => {
+    console.log("Calendar drag end for item:", item.name);
   };
 
   return (
     <div
-      draggable={true} // Make the item draggable
-      onDragStart={handleDragStart} // Handle drag start
-      onDragEnd={handleDragEnd} // Handle drag end
       style={{
         background:
           item.type === "expense"
@@ -84,19 +110,24 @@ const ListItem: React.FC<ExtendedListItemProps> = ({
         borderRadius: "50px",
         padding: "3px",
         width: "100%",
-        maxWidth: "450px",
+        maxWidth: "600px",
         transition: "all 0.3s ease",
-        cursor: "grab", // Show grab cursor
+        opacity: isReorderDragging ? 0.5 : 1,
+        transform: isReorderDragging ? "rotate(5deg)" : "none",
       }}
       onMouseOver={(e: React.MouseEvent<HTMLDivElement>) => {
-        const target = e.currentTarget;
-        target.style.transform = "translateY(-2px)";
-        target.style.filter = "brightness(1.1)";
+        if (!isReorderDragging) {
+          const target = e.currentTarget;
+          target.style.transform = "translateY(-2px)";
+          target.style.filter = "brightness(1.1)";
+        }
       }}
       onMouseOut={(e: React.MouseEvent<HTMLDivElement>) => {
-        const target = e.currentTarget;
-        target.style.transform = "translateY(0)";
-        target.style.filter = "brightness(1)";
+        if (!isReorderDragging) {
+          const target = e.currentTarget;
+          target.style.transform = "translateY(0)";
+          target.style.filter = "brightness(1)";
+        }
       }}
     >
       <div
@@ -112,19 +143,67 @@ const ListItem: React.FC<ExtendedListItemProps> = ({
           boxSizing: "border-box",
         }}
       >
+        {/* Left side: Grip handle for reordering */}
         <div
+          draggable={true}
+          onDragStart={handleReorderDragStart}
+          onDragEnd={handleReorderDragEnd}
+          style={{
+            cursor: isReorderDragging ? "grabbing" : "ns-resize",
+            padding: "8px 4px",
+            marginRight: "8px",
+            borderRadius: "6px",
+            transition: "background-color 0.2s ease",
+            border: "2px dashed transparent",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            minWidth: "24px",
+            backgroundColor: "#f8f9fa",
+          }}
+          onMouseOver={(e: React.MouseEvent<HTMLDivElement>) => {
+            e.currentTarget.style.backgroundColor = "#e9ecef";
+            e.currentTarget.style.borderColor = "#8c52ff";
+            e.currentTarget.style.cursor = "ns-resize";
+          }}
+          onMouseOut={(e: React.MouseEvent<HTMLDivElement>) => {
+            e.currentTarget.style.backgroundColor = "#f8f9fa";
+            e.currentTarget.style.borderColor = "transparent";
+          }}
+          title="Drag to reorder items"
+        >
+          <GripVertical size={16} color="#495057" />
+        </div>
+
+        {/* Center: Item content (draggable to calendar) */}
+        <div
+          draggable={true}
+          onDragStart={handleCalendarDragStart}
+          onDragEnd={handleCalendarDragEnd}
           style={{
             display: "flex",
             alignItems: "center",
             gap: "8px",
+            flex: 1,
+            cursor: "grab",
+            padding: "4px 8px",
+            borderRadius: "4px",
+            transition: "background-color 0.2s ease",
           }}
+          onMouseOver={(e: React.MouseEvent<HTMLDivElement>) => {
+            e.currentTarget.style.backgroundColor = "#f9fafb";
+          }}
+          onMouseOut={(e: React.MouseEvent<HTMLDivElement>) => {
+            e.currentTarget.style.backgroundColor = "transparent";
+          }}
+          title="Drag to schedule on calendar"
         >
           <span
             style={{
               fontSize: "18px",
               fontWeight: "500",
               color: "#2d3748",
-              pointerEvents: "none", // Prevent text selection during drag
+              pointerEvents: "none",
             }}
           >
             {item.name}
@@ -144,6 +223,7 @@ const ListItem: React.FC<ExtendedListItemProps> = ({
           )}
         </div>
 
+        {/* Right side: Amount and action buttons */}
         <div
           style={{
             display: "flex",
@@ -156,7 +236,7 @@ const ListItem: React.FC<ExtendedListItemProps> = ({
               fontSize: "20px",
               fontWeight: "700",
               color: item.type === "expense" ? "#667eea" : "#f5576c",
-              pointerEvents: "none", // Prevent text selection during drag
+              pointerEvents: "none",
             }}
           >
             ${item.amount.toFixed(2)}
@@ -170,7 +250,7 @@ const ListItem: React.FC<ExtendedListItemProps> = ({
           >
             <button
               onClick={(e) => {
-                e.stopPropagation(); // Prevent drag when clicking buttons
+                e.stopPropagation();
                 onEdit(item.id);
               }}
               style={{
@@ -196,7 +276,7 @@ const ListItem: React.FC<ExtendedListItemProps> = ({
 
             <button
               onClick={(e) => {
-                e.stopPropagation(); // Prevent drag when clicking buttons
+                e.stopPropagation();
                 onDelete(item.id);
               }}
               style={{

@@ -9,6 +9,11 @@ interface CreateItemData {
   type: "expense" | "income";
 }
 
+interface ReorderRequest {
+  id: number;
+  displayOrder: number;
+}
+
 interface UseBudgetItemsReturn {
   items: BudgetItem[];
   loading: boolean;
@@ -16,6 +21,7 @@ interface UseBudgetItemsReturn {
   createItem: (itemData: CreateItemData) => Promise<boolean>;
   updateItem: (id: number, itemData: CreateItemData) => Promise<boolean>;
   deleteItem: (id: number) => Promise<boolean>;
+  reorderItems: (reorderRequests: ReorderRequest[]) => Promise<boolean>;
   refreshItems: () => Promise<void>;
 }
 
@@ -99,6 +105,34 @@ export const useBudgetItems = (): UseBudgetItemsReturn => {
     }
   };
 
+  // Reorder items
+  const reorderItems = async (
+    reorderRequests: ReorderRequest[]
+  ): Promise<boolean> => {
+    try {
+      setError(null);
+      const response = await fetch(`${API_BASE_URL}/reorder`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(reorderRequests),
+      });
+
+      if (response.ok) {
+        await fetchItems(); // Refresh the list to get updated order
+        return true;
+      } else {
+        setError("Failed to reorder items");
+        return false;
+      }
+    } catch (error) {
+      setError("Error reordering items");
+      console.error("Error reordering items:", error);
+      return false;
+    }
+  };
+
   // Delete item
   const deleteItem = async (id: number): Promise<boolean> => {
     try {
@@ -139,6 +173,7 @@ export const useBudgetItems = (): UseBudgetItemsReturn => {
     createItem,
     updateItem,
     deleteItem,
+    reorderItems,
     refreshItems,
   };
 };

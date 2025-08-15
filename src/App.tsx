@@ -18,7 +18,7 @@ interface BalanceAdjustment {
 }
 
 const App: React.FC = () => {
-  // Custom hook handles all API calls and item state
+  // Custom hook handles all API calls and item state (now includes reordering)
   const {
     items,
     loading,
@@ -26,6 +26,7 @@ const App: React.FC = () => {
     createItem,
     updateItem,
     deleteItem,
+    reorderItems,
     refreshItems,
   } = useBudgetItems();
 
@@ -295,7 +296,7 @@ const App: React.FC = () => {
       {/* LEFT PANEL - Budget App (35%) - Scrollable */}
       <div
         style={{
-          width: "35%",
+          width: "40%",
           height: "100vh", // Fixed height
           padding: "40px 20px",
           display: "flex",
@@ -356,6 +357,7 @@ const App: React.FC = () => {
             onDelete={handleDelete}
             scheduledItems={scheduledItems}
             currentMonth={currentMonth}
+            onReorderItems={reorderItems}
           />
         </div>
       </div>
@@ -363,9 +365,9 @@ const App: React.FC = () => {
       {/* RIGHT PANEL - Calendar (65%) - Fixed/Stationary */}
       <div
         style={{
-          width: "65%",
+          width: "60%",
           height: "100vh", // Fixed height
-          padding: "40px",
+          padding: "30px",
           boxSizing: "border-box",
           display: "flex",
           flexDirection: "column",
