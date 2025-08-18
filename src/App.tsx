@@ -41,7 +41,6 @@ const App: React.FC = () => {
     error: adjustmentsError,
     createOrUpdateAdjustment,
     hasBalanceAdjustment,
-    getMostRecentAdjustment, // ADD THIS
   } = useBalanceAdjustments();
 
   console.log("Balance adjustments hook loaded:", {
@@ -76,6 +75,9 @@ const App: React.FC = () => {
     const currentDate = new Date();
     setCurrentMonth(currentDate);
     loadMonthItems(currentDate.getFullYear(), currentDate.getMonth() + 1);
+
+    // IMPORTANT: Also call handleMonthChange to get the correct starting balance
+    handleMonthChange(currentDate);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -100,29 +102,17 @@ const App: React.FC = () => {
   };
 
   // Handle month change from calendar (now passes adjustment parameters)
+  // Handle month change from calendar (simplified - backend reads adjustments automatically)
   const handleMonthChange = async (newMonth: Date): Promise<void> => {
     setCurrentMonth(newMonth);
     loadMonthItems(newMonth.getFullYear(), newMonth.getMonth() + 1);
 
-    // Get starting balance for this month using the parameter-based backend API
+    // Get starting balance for this month - backend handles adjustments automatically
     try {
-      // Get the most recent adjustment
-      const mostRecentAdjustment = getMostRecentAdjustment();
-
       const params = new URLSearchParams({
         year: newMonth.getFullYear().toString(),
         month: (newMonth.getMonth() + 1).toString(),
-        baseStartingBalance: "2500",
       });
-
-      // Add adjustment parameters if they exist
-      if (mostRecentAdjustment) {
-        params.append("adjustmentDate", mostRecentAdjustment.date);
-        params.append(
-          "adjustmentAmount",
-          mostRecentAdjustment.amount.toString()
-        );
-      }
 
       const response = await fetch(
         `http://localhost:8080/api/balance/month-start?${params}`
