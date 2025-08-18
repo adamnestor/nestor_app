@@ -103,12 +103,12 @@ const Calendar: React.FC<CalendarProps> = ({
     return scheduledItems.filter((item) => item.date === dateStr);
   };
 
+  // SIMPLE balance calculation - just uses the startingBalance prop and calculates forward
   const calculateRunningBalance = (throughDay: number): number => {
-    // Start with the month's starting balance (now includes carryover from previous month)
     let balance = startingBalance;
 
     console.log(
-      `Calculating balance for day ${throughDay}, starting with: ${balance}`
+      `Calendar: Calculating balance for day ${throughDay}, starting with: ${balance}`
     );
 
     // Calculate forward from day 1 through the specified day
@@ -127,7 +127,7 @@ const Calendar: React.FC<CalendarProps> = ({
       });
     }
 
-    console.log(`Final balance for day ${throughDay}: ${balance}`);
+    console.log(`Calendar: Final balance for day ${throughDay}: ${balance}`);
     return balance;
   };
 

@@ -9,15 +9,11 @@ import DateDetailModal from "./components/DateDetailModal";
 import StartingBalanceModal from "./components/StartingBalanceModal";
 import { useBudgetItems } from "./hooks/useBudgetItems";
 import { useScheduledItems } from "./hooks/useScheduledItems";
+import { useBalanceAdjustments } from "./hooks/useBalanceAdjustments";
 import type { BudgetItem } from "./types";
 
-// Interface for balance adjustments
-interface BalanceAdjustment {
-  date: string;
-  amount: number;
-}
-
 const App: React.FC = () => {
+  console.log("App component is rendering");
   // Custom hook handles all API calls and item state (now includes reordering)
   const {
     items,
@@ -39,6 +35,21 @@ const App: React.FC = () => {
     deleteScheduledItem,
   } = useScheduledItems();
 
+  // Custom hook for balance adjustments (replaces React state)
+  const {
+    loading: adjustmentsLoading,
+    error: adjustmentsError,
+    createOrUpdateAdjustment,
+    hasBalanceAdjustment,
+    getMostRecentAdjustment, // ADD THIS
+  } = useBalanceAdjustments();
+
+  console.log("Balance adjustments hook loaded:", {
+    adjustmentsLoading,
+    adjustmentsError,
+    hasCreateFunction: !!createOrUpdateAdjustment,
+  });
+
   // Form state
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
   const [formType, setFormType] = useState<"expense" | "income" | "">("");
@@ -53,20 +64,12 @@ const App: React.FC = () => {
   // Starting balance modal state
   const [showBalanceModal, setShowBalanceModal] = useState<boolean>(false);
 
-  // Balance adjustments state - stored in memory for this session
-  const [balanceAdjustments, setBalanceAdjustments] = useState<
-    BalanceAdjustment[]
-  >([]);
-
-  // Default starting balance
-  const [baseStartingBalance] = useState<number>(2500);
-
   // Current month state for tracking what's scheduled
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   // Dynamic starting balance that updates based on month carryover
   const [currentMonthStartingBalance, setCurrentMonthStartingBalance] =
-    useState<number>(baseStartingBalance);
+    useState<number>(2500);
 
   // Load current month's scheduled items on component mount
   useEffect(() => {
@@ -76,58 +79,50 @@ const App: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Check if a date has the most recent balance adjustment (only show pin on latest)
-  const hasBalanceAdjustment = (date: string): boolean => {
-    if (balanceAdjustments.length === 0) return false;
+  // Handle balance adjustment (now saves to database)
+  const handleSetBalance = async (
+    date: string,
+    amount: number
+  ): Promise<void> => {
+    console.log("handleSetBalance called with:", { date, amount }); // ADD THIS
 
-    // Find the most recent adjustment date
-    const mostRecentAdjustment = balanceAdjustments.sort((a, b) =>
-      b.date.localeCompare(a.date)
-    )[0];
+    const success = await createOrUpdateAdjustment(date, amount);
 
-    // Only show pin on the most recent adjustment date
-    return mostRecentAdjustment.date === date;
+    console.log("createOrUpdateAdjustment result:", success); // ADD THIS
+
+    if (success) {
+      console.log(
+        `Balance adjusted to $${amount} as of ${date} - saved to database!`
+      );
+    } else {
+      alert("Failed to save balance adjustment");
+    }
   };
 
-  // Handle balance adjustment
-  const handleSetBalance = (date: string, amount: number): void => {
-    const newAdjustment: BalanceAdjustment = { date, amount };
-
-    // Remove any existing adjustment for this date and add the new one
-    const updatedAdjustments = balanceAdjustments
-      .filter((adj) => adj.date !== date)
-      .concat(newAdjustment)
-      .sort((a, b) => a.date.localeCompare(b.date)); // Sort by date ascending
-
-    setBalanceAdjustments(updatedAdjustments);
-    console.log(`Balance adjusted to $${amount} as of ${date}`);
-  };
-
-  // Handle month change from calendar
+  // Handle month change from calendar (now passes adjustment parameters)
   const handleMonthChange = async (newMonth: Date): Promise<void> => {
     setCurrentMonth(newMonth);
     loadMonthItems(newMonth.getFullYear(), newMonth.getMonth() + 1);
 
-    // Get starting balance for this month using backend API
+    // Get starting balance for this month using the parameter-based backend API
     try {
-      const adjustmentDate =
-        balanceAdjustments.length > 0
-          ? balanceAdjustments[balanceAdjustments.length - 1].date
-          : null;
-      const adjustmentAmount =
-        balanceAdjustments.length > 0
-          ? balanceAdjustments[balanceAdjustments.length - 1].amount
-          : null;
+      // Get the most recent adjustment
+      const mostRecentAdjustment = getMostRecentAdjustment();
 
       const params = new URLSearchParams({
         year: newMonth.getFullYear().toString(),
         month: (newMonth.getMonth() + 1).toString(),
-        baseStartingBalance: baseStartingBalance.toString(),
+        baseStartingBalance: "2500",
       });
 
-      if (adjustmentDate) params.append("adjustmentDate", adjustmentDate);
-      if (adjustmentAmount !== null)
-        params.append("adjustmentAmount", adjustmentAmount.toString());
+      // Add adjustment parameters if they exist
+      if (mostRecentAdjustment) {
+        params.append("adjustmentDate", mostRecentAdjustment.date);
+        params.append(
+          "adjustmentAmount",
+          mostRecentAdjustment.amount.toString()
+        );
+      }
 
       const response = await fetch(
         `http://localhost:8080/api/balance/month-start?${params}`
@@ -142,12 +137,12 @@ const App: React.FC = () => {
           }`
         );
       } else {
-        console.warn("API call failed, using base balance");
-        setCurrentMonthStartingBalance(baseStartingBalance);
+        console.warn("API call failed, using default balance");
+        setCurrentMonthStartingBalance(2500);
       }
     } catch (error) {
       console.error("Error fetching month starting balance:", error);
-      setCurrentMonthStartingBalance(baseStartingBalance);
+      setCurrentMonthStartingBalance(2500);
     }
   };
 
@@ -301,14 +296,19 @@ const App: React.FC = () => {
     }
   };
 
-  // Show loading screen
-  if (loading) {
+  // Show loading screen if either main data or adjustments are loading
+  if (loading || adjustmentsLoading) {
     return <LoadingScreen />;
   }
 
-  // Show error state
+  // Show error state (prioritize main error over adjustments error)
   if (error) {
     return <ErrorScreen error={error} onRetry={refreshItems} />;
+  }
+
+  if (adjustmentsError) {
+    console.warn("Balance adjustments error:", adjustmentsError);
+    // Don't block the app for adjustments errors, just log them
   }
 
   // Main app render - Two Panel Layout with single background
